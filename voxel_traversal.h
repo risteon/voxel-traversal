@@ -1,5 +1,5 @@
-#ifndef VOXEL_TRAVERSAL_AMANATIDESWOOALGORITHM_H
-#define VOXEL_TRAVERSAL_AMANATIDESWOOALGORITHM_H
+#ifndef VOXEL_TRAVERSAL_H
+#define VOXEL_TRAVERSAL_H
 
 #include "Grid3DSpatialDef.h"
 #include "Ray.h"
@@ -21,15 +21,19 @@ namespace algorithm {
 // Notes:
 //     Assumes that indices for voxel coordinates begin at 1.
 
-using value_type = double;
+using float_type = double;
 
-void amanatidesWooAlgorithm(const Ray& ray, const Grid3DSpatialDef& grid,
-                            value_type t0, value_type t1) noexcept;
+bool traverseVoxelGrid(
+    const Ray& ray, const Grid3DSpatialDef& grid,
+    std::vector<Grid3DSpatialDef::Index3d>& traversed_voxels,
+                       float_type t0 = float_type{0.0},
+                       float_type t1 = float_type{1.0}) noexcept;
 
 [[nodiscard]] bool rayBoxIntersection(const Ray& ray,
                                       const Grid3DSpatialDef& grid,
-                                      value_type& tMin, value_type& tMax,
-                                      value_type t0 = 0.0, value_type t1 = 1.0) noexcept;
+                                      float_type& tMin, float_type& tMax,
+                                      float_type t0 = 0.0,
+                                      float_type t1 = 1.0) noexcept;
 }  // namespace algorithm
 
-#endif  // VOXEL_TRAVERSAL_AMANATIDESWOOALGORITHM_H
+#endif  // VOXEL_TRAVERSAL_H

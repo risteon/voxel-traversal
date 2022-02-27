@@ -17,7 +17,7 @@ class TestOnData : public ::testing::Test {
  protected:
   using float_type = Grid3DSpatialDef::float_type;
   using V3 = Grid3DSpatialDef::Vector3d;
-  using C3 = Grid3DSpatialDef::Count3d;
+  using C3 = Grid3DSpatialDef::Index3d;
   using V3f = Eigen::Vector3f;
 
   void SetUp() override {
@@ -31,9 +31,9 @@ class TestOnData : public ::testing::Test {
     ReadPoints(frame_counts_, "counts.bin");
 
     TransformRawData();
-    // clean up
-    points_raw_.clear();
-    origins_raw_.clear();
+    // free up memory
+    points_raw_ = decltype(points_raw_){};
+    origins_raw_ = decltype(origins_raw_){};
   }
 
   void TransformRawData() {
@@ -123,7 +123,7 @@ TEST_F(TestOnData, timeIntersectionCalculation) {
 
     for (const auto& point : pp) {
       const auto ray =
-          Ray::fromEndpoints(origin.cast<double>(), point.cast<double>());
+          Ray::fromOriginEnd(origin.cast<double>(), point.cast<double>());
       const auto intersect = rayBoxIntersection(ray, grid_, t_min, t_max);
       if (intersect) {
         ++intersection_count;

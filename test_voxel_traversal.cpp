@@ -2,180 +2,188 @@
 //
 #include <gtest/gtest.h>
 
-#include "voxel_traversal.h"
 #include <limits>
+
+#include "voxel_traversal.h"
 
 using namespace algorithm;
 
 // Small voxel grid 2x2x2
-class TestVoxel2x2x2Intersect : public ::testing::Test {
+class TestVoxelTraversal : public ::testing::Test {
  protected:
   using float_type = Grid3DSpatialDef::float_type;
   using V3 = Grid3DSpatialDef::Vector3d;
-  using C3 = Grid3DSpatialDef::Count3d;
+  using C3 = Grid3DSpatialDef::Index3d;
+  using TraversedVoxels = std::vector<Grid3DSpatialDef::Index3d>;
 
   static const constexpr Grid3DSpatialDef::float_type SQRT2 = sqrt(2.0);
   static const constexpr Grid3DSpatialDef::float_type HALF_SQRT2 = 0.5 * SQRT2;
   static const constexpr Grid3DSpatialDef::float_type SQRT3 = sqrt(3.0);
 
+  void expectTraversed(const TraversedVoxels& expected,
+                       const TraversedVoxels& actual) {
+    EXPECT_EQ(expected.size(), actual.size());
+    EXPECT_TRUE(std::equal(
+        expected.cbegin(), expected.cend(), actual.cbegin(),
+        [](const auto& a, const auto& b) { return (a == b).all(); }));
+  }
+  void expectTraversedInOrderWithGaps(const TraversedVoxels& expected,
+                                      const TraversedVoxels& actual) {
+    auto it_traversed = actual.cbegin();
+
+    for (const auto& exp : expected) {
+      const auto fp =
+          std::find_if(it_traversed, actual.cend(),
+                       [&exp](const auto& a) { return (a == exp).all(); });
+      if (fp == actual.cend()) {
+        ADD_FAILURE();
+        break;
+      }
+      it_traversed = fp;
+    }
+  }
+
+  Grid3DSpatialDef grid_;
+  TraversedVoxels traversed_voxels_;
+};
+
+// Small voxel grid 2x2x2
+class TestVoxel2x2x2Traversal : public TestVoxelTraversal {
+ protected:
   void SetUp() override {
     const V3 bound_min(0.0, 0.0, 0.0);
     const V3 bound_max(2.0, 2.0, 2.0);
     const C3 voxel_count(2, 2, 2);
     grid_ = Grid3DSpatialDef(bound_min, bound_max, voxel_count);
+    traversed_voxels_.reserve(1000);
   }
-
-  Grid3DSpatialDef grid_;
 };
 
-TEST_F(TestVoxel2x2x2Intersect, XYPlaneFixedT) {
-  float_type t_min, t_max;
+// Slightly bigger grid 5x5x5
+class TestVoxel5x5x5Traversal : public TestVoxelTraversal {
+ protected:
+  void SetUp() override {
+    const V3 bound_min(-10.0, -10.0, -10.0);
+    const V3 bound_max(10.0, 10.0, 10.0);
+    const C3 voxel_count(5, 5, 5);
+    grid_ = Grid3DSpatialDef(bound_min, bound_max, voxel_count);
+    traversed_voxels_.reserve(1000);
+  }
+};
+
+TEST_F(TestVoxel2x2x2Traversal, AllDirectionsWithinGrid) {
   {
-    const Ray ray({.5, .5, .5}, {1.0, 0., 0.});
-    const auto intersect = rayBoxIntersection(ray, grid_, t_min, t_max);
+    // should traverse two voxels in X dir. Ray completely within grid
+    const auto ray = Ray::fromOriginDir({.5, .5, .5}, {1., 0., 0.});
+    TraversedVoxels expected{{0, 0, 0}, {1, 0, 0}};
+    const auto intersect = traverseVoxelGrid(ray, grid_, traversed_voxels_);
     EXPECT_TRUE(intersect);
-    EXPECT_FLOAT_EQ(-0.5, t_min);
-    EXPECT_FLOAT_EQ(1.5, t_max);
+    expectTraversed(expected, traversed_voxels_);
   }
   {
-    const Ray ray(V3(-.5, -.5, -.5), V3(1.0, 0., 0.));
-    const auto intersect =
-        rayBoxIntersection(ray, grid_, t_min, t_max, 0.0, 1.0);
-    EXPECT_FALSE(intersect);
-  }
-  {
-    const Ray ray(V3(.5, -.5, .5), V3(1.0, 0., 0.));
-    const auto intersect =
-        rayBoxIntersection(ray, grid_, t_min, t_max, 0.0, 1.0);
-    EXPECT_FALSE(intersect);
-  }
-  {
-    // miss corner
-    const Ray ray(V3(.5, -.55, 1.0), V3(-1.0, 1.0, 0.));
-    const auto intersect =
-        rayBoxIntersection(ray, grid_, t_min, t_max, 0.0, 1.0);
-    EXPECT_FALSE(intersect);
-  }
-  {
-    // Non-unit direction vector
-    const Ray ray(V3(.5, -.4, 1.0), V3(-1.0, 1.0, 0.));
-    const auto intersect =
-        rayBoxIntersection(ray, grid_, t_min, t_max, 0.0, 1.0);
+    // should traverse two voxels in Y dir. Ray completely within grid
+    const auto ray = Ray::fromOriginDir({1.5, .5, .5}, {0., 1., 0.});
+    TraversedVoxels expected{{1, 0, 0}, {1, 1, 0}};
+    const auto intersect = traverseVoxelGrid(ray, grid_, traversed_voxels_);
     EXPECT_TRUE(intersect);
+    expectTraversed(expected, traversed_voxels_);
   }
   {
-    // Unit direction vector
-    const Ray ray({1.0, 1.0, 1.0}, {-HALF_SQRT2, -HALF_SQRT2, 0.});
-    const auto intersect =
-        rayBoxIntersection(ray, grid_, t_min, t_max, 0.0, 1.0);
+    // should traverse two voxels in Z dir. Ray completely within grid
+    const auto ray = Ray::fromOriginDir({1.5, .5, .5}, {0., 0., 1.});
+    TraversedVoxels expected{{1, 0, 0}, {1, 0, 1}};
+    const auto intersect = traverseVoxelGrid(ray, grid_, traversed_voxels_);
     EXPECT_TRUE(intersect);
-    EXPECT_FLOAT_EQ(-SQRT2, t_min);
-    EXPECT_FLOAT_EQ(SQRT2, t_max);
+    expectTraversed(expected, traversed_voxels_);
   }
+  // Negative directions
   {
-    // Non-unit direction vector
-    const Ray ray({1.0, 1.0, 1.0}, {-1.0, -1.0, 0.});
-    const auto intersect = rayBoxIntersection(ray, grid_, t_min, t_max);
+    // should traverse two voxels in X dir. Ray completely within grid
+    const auto ray = Ray::fromOriginDir({1.5, .5, .5}, {-1., 0., 0.});
+    TraversedVoxels expected{{1, 0, 0}, {0, 0, 0}};
+    const auto intersect = traverseVoxelGrid(ray, grid_, traversed_voxels_);
     EXPECT_TRUE(intersect);
-    EXPECT_FLOAT_EQ(-1.0, t_min);
-    EXPECT_FLOAT_EQ(1.0, t_max);
+    expectTraversed(expected, traversed_voxels_);
   }
   {
-    // positive direction
-    const Ray ray({1.0, 1.0, 1.0}, {1.0, 1.0, 0.});
-    const auto intersect = rayBoxIntersection(ray, grid_, t_min, t_max, 0.0, 1.0);
+    // should traverse two voxels in Y dir. Ray completely within grid
+    const auto ray = Ray::fromOriginDir({1.5, 1.5, .5}, {0., -1., 0.});
+    TraversedVoxels expected{{1, 1, 0}, {1, 0, 0}};
+    const auto intersect = traverseVoxelGrid(ray, grid_, traversed_voxels_);
     EXPECT_TRUE(intersect);
-    EXPECT_FLOAT_EQ(-1.0, t_min);
-    EXPECT_FLOAT_EQ(1.0, t_max);
+    expectTraversed(expected, traversed_voxels_);
   }
   {
-    // too short, stops before grid
-    const Ray ray({-1.0, 3.0, 1.0}, {1.1, -0.9, 0.});
-    const auto intersect = rayBoxIntersection(ray, grid_, t_min, t_max, 0.0, 1.0);
-    EXPECT_FALSE(intersect);
-    EXPECT_GE(t_min, 1.0);
-    EXPECT_GE(t_max, 1.0);
-  }
-  {
-    // long enough, reaches into grid and ends within
-    const Ray ray({-1.0, 3.0, 1.0}, {1.1, -1.1, 0.});
-    const auto intersect = rayBoxIntersection(ray, grid_, t_min, t_max, 0.0, 1.0);
+    // should traverse two voxels in Z dir. Ray completely within grid
+    const auto ray = Ray::fromOriginDir({1.5, .5, 1.5}, {0., 0., -1.});
+    TraversedVoxels expected{{1, 0, 1}, {1, 0, 0}};
+    const auto intersect = traverseVoxelGrid(ray, grid_, traversed_voxels_);
     EXPECT_TRUE(intersect);
-    EXPECT_LE(t_min, 1.0);
-    EXPECT_GE(t_max, 1.0);
-  }
-  {
-    // parallel to grid, does never intersect
-    const auto ray = Ray::fromEndpoints({-0.5, 0.5, 0.5}, {-0.5, 1.5, 0.5});
-    const auto intersect = rayBoxIntersection(ray, grid_, t_min, t_max, 0.0, 1.0);
-    EXPECT_FALSE(intersect);
-    EXPECT_FLOAT_EQ(std::numeric_limits<float_type>::infinity(), std::fabs(t_min));
-    EXPECT_FLOAT_EQ(std::numeric_limits<float_type>::infinity(), std::fabs(t_max));
-  }
-  {
-    // parallel to grid, does intersect
-    const auto ray = Ray::fromEndpoints({-0.5, 0.5, 0.5}, {0.5, 0.5, 0.5});
-    const auto intersect = rayBoxIntersection(ray, grid_, t_min, t_max, 0.0, 1.0);
-    EXPECT_TRUE(intersect);
-    EXPECT_FLOAT_EQ(0.5, t_min);
-    EXPECT_FLOAT_EQ(2.5, t_max);
+    expectTraversed(expected, traversed_voxels_);
   }
 }
 
-TEST_F(TestVoxel2x2x2Intersect, RayOutsideXYPlane) {
-  double t_min, t_max;
+TEST_F(TestVoxel2x2x2Traversal, SingleVoxel) {
   {
+    // only single voxel, ray too short to reach second
+    const auto ray = Ray::fromOriginDir({1.5, 1.5, 1.5}, {0.4, 0., 0.});
+    TraversedVoxels expected{{1, 1, 1}};
+    const auto intersect = traverseVoxelGrid(ray, grid_, traversed_voxels_);
+    EXPECT_TRUE(intersect);
+    expectTraversed(expected, traversed_voxels_);
+  }
+  {
+    // only single voxel, cut through corner
+    // -> make sure that there is no infinite loop
+    const auto ray = Ray::fromOriginEnd({-0.45, 0.5, 1.5}, {0.55, -0.5, 1.5});
+    TraversedVoxels expected{{0, 0, 1}};
+    const auto intersect = traverseVoxelGrid(ray, grid_, traversed_voxels_);
+    EXPECT_TRUE(intersect);
+    expectTraversed(expected, traversed_voxels_);
+  }
+  {
+    // only single voxel, cut through corner
+    // -> make sure that there is no infinite loop
+    const auto ray = Ray::fromOriginEnd({-0.5, 1.5, 0.55}, {0.5, 1.5, -0.45});
+    TraversedVoxels expected{{0, 1, 0}};
+    const auto intersect = traverseVoxelGrid(ray, grid_, traversed_voxels_);
+    EXPECT_TRUE(intersect);
+    expectTraversed(expected, traversed_voxels_);
+  }
+}
+
+TEST_F(TestVoxel2x2x2Traversal, NoVoxel) {
+  {
+    // only single voxel, ray too short to reach second
+    const auto ray = Ray::fromOriginDir({1.5, 1.5, 2.1}, {0., 1., 0.});
+    TraversedVoxels expected{};
+    const auto intersect = traverseVoxelGrid(ray, grid_, traversed_voxels_);
+    EXPECT_FALSE(intersect);
+    expectTraversed(expected, traversed_voxels_);
+  }
+}
+
+TEST_F(TestVoxel5x5x5Traversal, Diagonal) {
+  float_type t_min, t_max;
+  {
+    // full diagonal. We do not assert specific order of off-diagonal voxels
+    const auto ray =
+        Ray::fromOriginDir({-20.0, -20.0, -20.0}, {40.0, 40.0, 40.0});
+    TraversedVoxels expected{
+        {0, 0, 0}, {1, 1, 1}, {2, 2, 2}, {3, 3, 3}, {4, 4, 4}};
     //
-    const auto ray = Ray::fromEndpoints({-0.5, -0.5, -0.5}, {2.0, 2.0, 2.0});
-    const auto intersect = rayBoxIntersection(ray, grid_, t_min, t_max);
+    EXPECT_TRUE(rayBoxIntersection(ray, grid_, t_min, t_max));
+    EXPECT_FLOAT_EQ(0.25, t_min);
+    EXPECT_FLOAT_EQ(0.75, t_max);
+    const auto intersect = traverseVoxelGrid(ray, grid_, traversed_voxels_);
     EXPECT_TRUE(intersect);
-    EXPECT_GE(t_min, 0.1);
-    EXPECT_FLOAT_EQ(1.0, t_max);
-  }
-  {
-    // outside of grid
-    const auto ray = Ray::fromEndpoints({2.1, 2.1, 2.1}, {2.2, 2.2, 2.2});
-    const auto intersect = rayBoxIntersection(ray, grid_, t_min, t_max);
-    EXPECT_FALSE(intersect);
-    EXPECT_FLOAT_EQ(t_min, -21.0);
-    EXPECT_FLOAT_EQ(t_max, -1.0);
-  }
-}
-
-TEST_F(TestVoxel2x2x2Intersect, DegenerateCase) {
-  float_type t_min, t_max;
-  {
-    // zero direction within grid -> does intersect with single point
-    const Ray ray({.5, .5, .5}, V3::Zero());
-    const auto intersect = rayBoxIntersection(ray, grid_, t_min, t_max);
-    EXPECT_TRUE(intersect);
-    EXPECT_FLOAT_EQ(std::numeric_limits<float_type>::infinity(), std::fabs(t_min));
-    EXPECT_FLOAT_EQ(std::numeric_limits<float_type>::infinity(), std::fabs(t_max));
-  }
-  {
-    // zero direction within grid -> does intersect with single point
-    // different position near corner
-    const Ray ray({1.99, 1.99, 0.01}, V3::Zero());
-    const auto intersect = rayBoxIntersection(ray, grid_, t_min, t_max);
-    EXPECT_TRUE(intersect);
-    EXPECT_FLOAT_EQ(std::numeric_limits<float_type>::infinity(), std::fabs(t_min));
-    EXPECT_FLOAT_EQ(std::numeric_limits<float_type>::infinity(), std::fabs(t_max));
-  }
-  {
-    // zero direction outside of grid -> does not intersect
-    const Ray ray({.5, .5, -0.1}, V3::Zero());
-    const auto intersect = rayBoxIntersection(ray, grid_, t_min, t_max);
-    EXPECT_FALSE(intersect);
-    EXPECT_FLOAT_EQ(std::numeric_limits<float_type>::infinity(), std::fabs(t_min));
-    EXPECT_FLOAT_EQ(std::numeric_limits<float_type>::infinity(), std::fabs(t_max));
-  }
-  {
-    // zero direction outside of grid -> does not intersect
-    // different position
-    const Ray ray({.5, -0.01, .5}, V3::Zero());
-    const auto intersect = rayBoxIntersection(ray, grid_, t_min, t_max);
-    EXPECT_FALSE(intersect);
-    EXPECT_FLOAT_EQ(std::numeric_limits<float_type>::infinity(), std::fabs(t_min));
-    EXPECT_FLOAT_EQ(std::numeric_limits<float_type>::infinity(), std::fabs(t_max));
+    EXPECT_GE(traversed_voxels_.size(), 5);
+    expectTraversedInOrderWithGaps(expected, traversed_voxels_);
+    EXPECT_TRUE((traversed_voxels_.front() == expected.front()).all());
+    EXPECT_TRUE((traversed_voxels_.back() == expected.back()).all());
+//    for (const auto& x : traversed_voxels_) {
+//      std::cout << x << std::endl;
+//      std::cout << "---" << std::endl;
+//    }
   }
 }

@@ -13,7 +13,7 @@ class Grid3DSpatialDef {
 
   using Vector3d = Eigen::Matrix<float_type, 3, 1>;
   using Size3d = Eigen::Array<float_type, 3, 1>;
-  using Count3d = Eigen::Array<int_type, 3, 1>;
+  using Index3d = Eigen::Array<int_type, 3, 1>;
 
   Grid3DSpatialDef() = default;
   Grid3DSpatialDef& operator=(Grid3DSpatialDef other) {
@@ -25,7 +25,7 @@ class Grid3DSpatialDef {
   }
 
   Grid3DSpatialDef(const Vector3d& min_bound, const Vector3d& max_bound,
-                   const Count3d& num_voxels)
+                   const Index3d& num_voxels)
       : min_bound_{min_bound},
         max_bound_{max_bound},
         grid_size_{max_bound - min_bound},
@@ -35,7 +35,7 @@ class Grid3DSpatialDef {
     assert((min_bound_.array() < max_bound_.array()).all());
   }
 
-  [[nodiscard]] const Count3d& numVoxels() const { return num_voxels_; }
+  [[nodiscard]] const Index3d& numVoxels() const { return num_voxels_; }
 
   [[nodiscard]] const Vector3d& minBound() const { return min_bound_; }
   [[nodiscard]] const Vector3d&  maxBound() const { return max_bound_; }
@@ -60,7 +60,7 @@ class Grid3DSpatialDef {
   // The grid size, determined by (max_bound_ - min_bound_).
   Size3d grid_size_;
   // The number of voxels in each of the x, y, z directions.
-  Count3d num_voxels_;
+  Index3d num_voxels_;
   // The size of the voxel's x dimension.
   Size3d voxel_size_;
 };

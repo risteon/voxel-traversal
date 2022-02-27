@@ -6,6 +6,7 @@ namespace algorithm {
 
 // Macro defined to avoid unnecessary checks with NaNs when using std::max
 #define MAX(a, b) ((a > b ? a : b))
+#define MIN(a, b) ((a < b ? a : b))
 
 // Uses the improved version of Smit's algorithm to determine if the given ray
 // will intersect the grid between tMin and tMax. This version causes an
@@ -15,38 +16,37 @@ namespace algorithm {
 // See: http://www.cs.utah.edu/~awilliam/box/box.pdf
 [[nodiscard]] bool rayBoxIntersection(const Ray& ray,
                                       const Grid3DSpatialDef& grid,
-                                      value_type& tMin, value_type& tMax,
-                                      value_type t0, value_type t1) noexcept {
-  value_type tYMin, tYMax, tZMin, tZMax;
-  const value_type x_inv_dir = 1 / ray.direction().x();
-  if (x_inv_dir >= 0) {
-    tMin = (grid.minBound().x() - ray.origin().x()) * x_inv_dir;
-    tMax = (grid.maxBound().x() - ray.origin().x()) * x_inv_dir;
+                                      float_type& tMin, float_type& tMax,
+                                      float_type t0, float_type t1) noexcept {
+  float_type tYMin, tYMax, tZMin, tZMax;
+  const auto inverse_direction = ray.direction().cwiseInverse();
+
+  if (inverse_direction.x() >= 0) {
+    tMin = (grid.minBound().x() - ray.origin().x()) * inverse_direction.x();
+    tMax = (grid.maxBound().x() - ray.origin().x()) * inverse_direction.x();
   } else {
-    tMin = (grid.maxBound().x() - ray.origin().x()) * x_inv_dir;
-    tMax = (grid.minBound().x() - ray.origin().x()) * x_inv_dir;
+    tMin = (grid.maxBound().x() - ray.origin().x()) * inverse_direction.x();
+    tMax = (grid.minBound().x() - ray.origin().x()) * inverse_direction.x();
   }
 
-  const value_type y_inv_dir = 1 / ray.direction().y();
-  if (y_inv_dir >= 0) {
-    tYMin = (grid.minBound().y() - ray.origin().y()) * y_inv_dir;
-    tYMax = (grid.maxBound().y() - ray.origin().y()) * y_inv_dir;
+  if (inverse_direction.y() >= 0) {
+    tYMin = (grid.minBound().y() - ray.origin().y()) * inverse_direction.y();
+    tYMax = (grid.maxBound().y() - ray.origin().y()) * inverse_direction.y();
   } else {
-    tYMin = (grid.maxBound().y() - ray.origin().y()) * y_inv_dir;
-    tYMax = (grid.minBound().y() - ray.origin().y()) * y_inv_dir;
+    tYMin = (grid.maxBound().y() - ray.origin().y()) * inverse_direction.y();
+    tYMax = (grid.minBound().y() - ray.origin().y()) * inverse_direction.y();
   }
 
   if (tMin > tYMax || tYMin > tMax) return false;
   if (tYMin > tMin) tMin = tYMin;
   if (tYMax < tMax) tMax = tYMax;
 
-  const value_type z_inv_dir = 1 / ray.direction().z();
-  if (z_inv_dir >= 0) {
-    tZMin = (grid.minBound().z() - ray.origin().z()) * z_inv_dir;
-    tZMax = (grid.maxBound().z() - ray.origin().z()) * z_inv_dir;
+  if (inverse_direction.z() >= 0) {
+    tZMin = (grid.minBound().z() - ray.origin().z()) * inverse_direction.z();
+    tZMax = (grid.maxBound().z() - ray.origin().z()) * inverse_direction.z();
   } else {
-    tZMin = (grid.maxBound().z() - ray.origin().z()) * z_inv_dir;
-    tZMax = (grid.minBound().z() - ray.origin().z()) * z_inv_dir;
+    tZMin = (grid.maxBound().z() - ray.origin().z()) * inverse_direction.z();
+    tZMax = (grid.minBound().z() - ray.origin().z()) * inverse_direction.z();
   }
 
   if (tMin > tZMax || tZMin > tMax) return false;
@@ -55,26 +55,35 @@ namespace algorithm {
   return (tMin < t1 && tMax > t0);
 }
 
-void amanatidesWooAlgorithm(const Ray& ray, const Grid3DSpatialDef& grid,
-                            value_type t0, value_type t1) noexcept {
-  value_type tMin;
-  value_type tMax;
+bool traverseVoxelGrid(const Ray& ray, const Grid3DSpatialDef& grid,
+                       std::vector<Grid3DSpatialDef::Index3d>& traversed_voxels,
+                       float_type t0, float_type t1) noexcept {
+  traversed_voxels.clear();
+
+  float_type tMin{};
+  float_type tMax{};
   const bool ray_intersects_grid =
       rayBoxIntersection(ray, grid, tMin, tMax, t0, t1);
-  if (!ray_intersects_grid) return;
+  if (!ray_intersects_grid) return false;
 
   tMin = MAX(tMin, t0);
-  tMax = MAX(tMax, t1);
-  const auto ray_start = ray.origin() + ray.direction() * tMin;
-  const auto ray_end = ray.origin() + ray.direction() * tMax;
+  tMax = MIN(tMax, t1);
+  const auto ray_start = ray.at(tMin);
+  const auto ray_end = ray.at(tMax);
+
+  // get voxel index of start and end within grid
 
   size_t current_X_index = MAX(
-      1, std::ceil(ray_start.x() - grid.minBound().x() / grid.voxelSize().x()));
-  const size_t end_X_index = MAX(
-      1, std::ceil(ray_end.x() - grid.minBound().x() / grid.voxelSize().x()));
+      1, std::ceil((ray_start.x() - grid.minBound().x()) / grid.voxelSize().x()));
+  current_X_index = MIN(current_X_index, grid.numVoxels().x());
+
+  size_t end_X_index = MAX(
+      1, std::ceil((ray_end.x() - grid.minBound().x()) / grid.voxelSize().x()));
+  end_X_index = MIN(end_X_index, grid.numVoxels().x());
+
   int stepX;
-  value_type tDeltaX;
-  value_type tMaxX;
+  float_type tDeltaX;
+  float_type tMaxX;
   if (ray.direction().x() > 0.0) {
     stepX = 1;
     tDeltaX = grid.voxelSize().x() / ray.direction().x();
@@ -95,12 +104,16 @@ void amanatidesWooAlgorithm(const Ray& ray, const Grid3DSpatialDef& grid,
   }
 
   size_t current_Y_index = MAX(
-      1, std::ceil(ray_start.y() - grid.minBound().y() / grid.voxelSize().y()));
-  const size_t end_Y_index = MAX(
-      1, std::ceil(ray_end.y() - grid.minBound().y() / grid.voxelSize().y()));
+      1, std::ceil((ray_start.y() - grid.minBound().y()) / grid.voxelSize().y()));
+  current_Y_index = MIN(current_Y_index, grid.numVoxels().y());
+
+  size_t end_Y_index = MAX(
+      1, std::ceil((ray_end.y() - grid.minBound().y()) / grid.voxelSize().y()));
+  end_Y_index = MIN(end_Y_index, grid.numVoxels().y());
+
   int stepY;
-  value_type tDeltaY;
-  value_type tMaxY;
+  float_type tDeltaY;
+  float_type tMaxY;
   if (ray.direction().y() > 0.0) {
     stepY = 1;
     tDeltaY = grid.voxelSize().y() / ray.direction().y();
@@ -121,12 +134,16 @@ void amanatidesWooAlgorithm(const Ray& ray, const Grid3DSpatialDef& grid,
   }
 
   size_t current_Z_index = MAX(
-      1, std::ceil(ray_start.z() - grid.minBound().z() / grid.voxelSize().z()));
-  const size_t end_Z_index = MAX(
-      1, std::ceil(ray_end.z() - grid.minBound().z() / grid.voxelSize().z()));
+      1, std::ceil((ray_start.z() - grid.minBound().z()) / grid.voxelSize().z()));
+  current_Z_index = MIN(current_Z_index, grid.numVoxels().z());
+
+  size_t end_Z_index = MAX(
+      1, std::ceil((ray_end.z() - grid.minBound().z()) / grid.voxelSize().z()));
+  end_Z_index = MIN(end_Z_index, grid.numVoxels().z());
+
   int stepZ;
-  value_type tDeltaZ;
-  value_type tMaxZ;
+  float_type tDeltaZ;
+  float_type tMaxZ;
   if (ray.direction().z() > 0.0) {
     stepZ = 1;
     tDeltaZ = grid.voxelSize().z() / ray.direction().z();
@@ -146,6 +163,9 @@ void amanatidesWooAlgorithm(const Ray& ray, const Grid3DSpatialDef& grid,
     tMaxZ = tMax;
   }
 
+  traversed_voxels.emplace_back(current_X_index - 1, current_Y_index - 1,
+                                current_Z_index - 1);
+
   while (current_X_index != end_X_index || current_Y_index != end_Y_index ||
          current_Z_index != end_Z_index) {
     if (tMaxX < tMaxY && tMaxX < tMaxZ) {
@@ -161,7 +181,12 @@ void amanatidesWooAlgorithm(const Ray& ray, const Grid3DSpatialDef& grid,
       current_Z_index += stepZ;
       tMaxZ += tDeltaZ;
     }
+
+    traversed_voxels.emplace_back(current_X_index - 1, current_Y_index - 1,
+                                  current_Z_index - 1);
   }
+
+  return true;
 }
 
-} // namespace algorithm
+}  // namespace algorithm

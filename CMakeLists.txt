@@ -19,6 +19,7 @@ FetchContent_MakeAvailable(googletest)
 
 enable_testing()
 
+##################################
 add_executable(
         test_voxel_traversal
         test_voxel_traversal.cpp
@@ -29,7 +30,18 @@ target_link_libraries(
         Eigen3::Eigen
         gtest_main
 )
-
+##################################
+add_executable(
+        test_voxel_intersect
+        test_voxel_intersect.cpp
+        voxel_traversal.cpp
+)
+target_link_libraries(
+        test_voxel_intersect
+        Eigen3::Eigen
+        gtest_main
+)
+##################################
 add_executable(
         test_on_data
         test_on_data.cpp
@@ -43,4 +55,5 @@ target_link_libraries(
 
 include(GoogleTest)
 gtest_discover_tests(test_voxel_traversal)
+gtest_discover_tests(test_voxel_intersect)
 gtest_discover_tests(test_on_data PROPERTIES ENVIRONMENT "DATADIR=${CMAKE_CURRENT_SOURCE_DIR}/data/")
