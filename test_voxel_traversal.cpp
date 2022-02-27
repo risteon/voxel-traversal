@@ -71,6 +71,18 @@ class TestVoxel5x5x5Traversal : public TestVoxelTraversal {
   }
 };
 
+// cuboid grid
+class TestVoxel4x2x1Traversal : public TestVoxelTraversal {
+ protected:
+  void SetUp() override {
+    const V3 bound_min(0.0, 0.0, -50.0);
+    const V3 bound_max(4.0, 2.0, -15.0);
+    const C3 voxel_count(4, 2, 1);
+    grid_ = Grid3DSpatialDef(bound_min, bound_max, voxel_count);
+    traversed_voxels_.reserve(1000);
+  }
+};
+
 TEST_F(TestVoxel2x2x2Traversal, AllDirectionsWithinGrid) {
   {
     // should traverse two voxels in X dir. Ray completely within grid
@@ -181,9 +193,55 @@ TEST_F(TestVoxel5x5x5Traversal, Diagonal) {
     expectTraversedInOrderWithGaps(expected, traversed_voxels_);
     EXPECT_TRUE((traversed_voxels_.front() == expected.front()).all());
     EXPECT_TRUE((traversed_voxels_.back() == expected.back()).all());
-//    for (const auto& x : traversed_voxels_) {
-//      std::cout << x << std::endl;
-//      std::cout << "---" << std::endl;
-//    }
+  }
+}
+
+TEST_F(TestVoxel4x2x1Traversal, StoppingStartingRay) {
+  {
+    const auto ray = Ray::fromOriginEnd({1.5, 0.8, -25.0}, {6.0, 1.7, -25.0});
+    TraversedVoxels expected{{1, 0, 0}, {2, 0, 0}, {2, 1, 0}, {3, 1, 0}};
+    const auto intersect = traverseVoxelGrid(ray, grid_, traversed_voxels_, 0.0, 1.0);
+    EXPECT_TRUE(intersect);
+    expectTraversed(expected, traversed_voxels_);
+  }
+  {
+    // other way around
+    const auto ray = Ray::fromOriginEnd({6.0, 1.7, -25.0}, {1.5, 0.8, -25.0});
+    TraversedVoxels expected{{3, 1, 0}, {2, 1, 0}, {2, 0, 0}, {1, 0, 0}};
+    const auto intersect = traverseVoxelGrid(ray, grid_, traversed_voxels_, 0.0, 1.0);
+    EXPECT_TRUE(intersect);
+    expectTraversed(expected, traversed_voxels_);
+  }
+  {
+    // shorter
+    const auto ray = Ray::fromOriginEnd({6.0, 1.7, -25.0}, {1.5, 0.8, -25.0});
+    TraversedVoxels expected{{3, 1, 0}};
+    const auto intersect = traverseVoxelGrid(ray, grid_, traversed_voxels_, 0.0, 0.5);
+    EXPECT_TRUE(intersect);
+    expectTraversed(expected, traversed_voxels_);
+  }
+  {
+    // shorter ray, use t1
+    const auto ray = Ray::fromOriginEnd({1.5, 0.8, -25.0}, {2.5, 1.0, -25.0});
+    TraversedVoxels expected{{1, 0, 0}, {2, 0, 0}};
+    const auto intersect = traverseVoxelGrid(ray, grid_, traversed_voxels_, 0.0, 0.9);
+    EXPECT_TRUE(intersect);
+    expectTraversed(expected, traversed_voxels_);
+  }
+  {
+    // shorter ray, use t1
+    const auto ray = Ray::fromOriginEnd({1.5, 0.8, -25.0}, {2.5, 1.0, -25.0});
+    TraversedVoxels expected{{1, 0, 0}, {2, 0, 0}, {2, 1, 0}};
+    const auto intersect = traverseVoxelGrid(ray, grid_, traversed_voxels_, 0.0, 1.25);
+    EXPECT_TRUE(intersect);
+    expectTraversed(expected, traversed_voxels_);
+  }
+  {
+    // long ray, use t1
+    const auto ray = Ray::fromOriginEnd({1.5, 0.8, -25.0}, {2.5, 1.0, -25.0});
+    TraversedVoxels expected{{1, 0, 0}, {2, 0, 0}, {2, 1, 0}, {3, 1, 0}};
+    const auto intersect = traverseVoxelGrid(ray, grid_, traversed_voxels_, 0.0, 15.0);
+    EXPECT_TRUE(intersect);
+    expectTraversed(expected, traversed_voxels_);
   }
 }
