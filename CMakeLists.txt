@@ -30,5 +30,17 @@ target_link_libraries(
         gtest_main
 )
 
+add_executable(
+        test_on_data
+        test_on_data.cpp
+        voxel_traversal.cpp
+)
+target_link_libraries(
+        test_on_data
+        Eigen3::Eigen
+        gtest_main
+)
+
 include(GoogleTest)
 gtest_discover_tests(test_voxel_traversal)
+gtest_discover_tests(test_on_data PROPERTIES ENVIRONMENT "DATADIR=${CMAKE_CURRENT_SOURCE_DIR}/data/")
