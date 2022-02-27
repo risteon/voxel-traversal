@@ -19,6 +19,7 @@ class TestOnData : public ::testing::Test {
   using V3 = Grid3DSpatialDef::Vector3d;
   using C3 = Grid3DSpatialDef::Index3d;
   using V3f = Eigen::Vector3f;
+  using TraversedVoxels = std::vector<Grid3DSpatialDef::Index3d>;
 
   void SetUp() override {
     const V3 bound_min(0.0, -25.6, -2.0);
@@ -49,22 +50,30 @@ class TestOnData : public ::testing::Test {
 
     origins_.resize(num_frames);
     points_.resize(num_frames);
+    points_double_precision_.resize(num_frames);
+    origins_double_precision_.resize(num_frames);
+
     for (std::size_t i = 0, j = 0; j < origins_.size(); ++j, i += 3) {
       origins_[j] = V3f(origins_raw_.data() + i);
+      origins_double_precision_[j] = origins_[j].cast<double>();
     }
     std::size_t batch_count = 0;
     std::size_t current_frame = 0;
     for (const auto frame_count : frame_counts_) {
       auto& pp = points_[current_frame];
+      auto& ppd = points_double_precision_[current_frame];
       pp.resize(frame_count);
+      ppd.resize(frame_count);
       for (std::size_t i = 0, j = 0; j < frame_count; ++j, i += 3) {
         pp[j] = V3f(points_raw_.data() + batch_count * 3 + i);
+        ppd[j] = pp[j].cast<double>();
       }
       batch_count += frame_count;
       ++current_frame;
     }
 
     ASSERT_EQ(points_.size(), origins_.size());
+    ASSERT_EQ(points_double_precision_.size(), origins_double_precision_.size());
   }
 
   template <typename Scalar>
@@ -101,6 +110,9 @@ class TestOnData : public ::testing::Test {
   std::vector<std::vector<V3f>> points_;
   std::vector<V3f> origins_;
   std::size_t total_point_count_;
+  // double precision
+  std::vector<std::vector<V3>> points_double_precision_;
+  std::vector<V3> origins_double_precision_;
 };
 
 TEST_F(TestOnData, timeIntersectionCalculation) {
@@ -110,11 +122,13 @@ TEST_F(TestOnData, timeIntersectionCalculation) {
 
   double t_min, t_max;
   uint32_t intersection_count{0};
+  TraversedVoxels traversedVoxels{};
+  traversedVoxels.reserve(1000);
 
   auto t1 = high_resolution_clock::now();
-  for (std::size_t frame = 0; frame < points_.size(); ++frame) {
-    const auto& pp = points_[frame];
-    const V3f& origin = origins_[frame];
+  for (std::size_t frame = 0; frame < points_double_precision_.size(); ++frame) {
+    const auto& pp = points_double_precision_[frame];
+    const V3& origin = origins_double_precision_[frame];
 
     if (frame % 50 == 0) {
       std::cout << "...processing frame #" << frame << " with #" << pp.size()
@@ -123,7 +137,7 @@ TEST_F(TestOnData, timeIntersectionCalculation) {
 
     for (const auto& point : pp) {
       const auto ray =
-          Ray::fromOriginEnd(origin.cast<double>(), point.cast<double>());
+          Ray::fromOriginEnd(origin, point);
       const auto intersect = rayBoxIntersection(ray, grid_, t_min, t_max);
       if (intersect) {
         ++intersection_count;
@@ -150,5 +164,78 @@ TEST_F(TestOnData, timeIntersectionCalculation) {
   }
   else {
     std::cout << "... exactly as expected." << std::endl;
+  }
+}
+
+TEST_F(TestOnData, timeTraversalCalculation) {
+  using std::chrono::duration;
+  using std::chrono::duration_cast;
+  using std::chrono::high_resolution_clock;
+
+  double t_min, t_max;
+  uint32_t intersection_count{0};
+  uint64_t traversal_count{0};
+
+  TraversedVoxels traversedVoxels{};
+  traversedVoxels.reserve(1000);
+
+  auto t1 = high_resolution_clock::now();
+  for (std::size_t frame = 0; frame < points_double_precision_.size(); ++frame) {
+    const auto& pp = points_double_precision_[frame];
+    const V3& origin = origins_double_precision_[frame];
+
+    if (frame % 50 == 0) {
+      std::cout << "...processing frame #" << frame << " with #" << pp.size()
+                << " points..." << std::endl;
+    }
+
+    for (const auto& point : pp) {
+      const auto ray =
+          Ray::fromOriginEnd(origin, point);
+
+      const auto intersect = traverseVoxelGrid(ray, grid_, traversedVoxels, 0.0, 1.0);
+      if (intersect) {
+        ++intersection_count;
+      }
+      traversal_count += traversedVoxels.size();
+    }
+  }
+  auto t2 = high_resolution_clock::now();
+  const duration<double> ss = t2 - t1;
+
+  std::cout << "Elapsed seconds: " << ss.count() << std::endl;
+  std::cout << "Total number of rays: " << total_point_count_ << std::endl;
+  std::cout << "Total number of intersections: " << intersection_count
+            << std::endl;
+  // originally: 278 963 540
+  std::cout << "Total number of traversed voxels: " << traversal_count
+            << std::endl;
+}
+
+TEST_F(TestOnData, sanityCheckTraversalCalculation) {
+
+  TraversedVoxels traversedVoxels{};
+  traversedVoxels.reserve(1000);
+
+  for (std::size_t frame = 0; frame < points_double_precision_.size(); ++frame) {
+    const auto& pp = points_double_precision_[frame];
+    const V3& origin = origins_double_precision_[frame];
+
+    if (frame % 50 == 0) {
+      std::cout << "...processing frame #" << frame << " with #" << pp.size()
+                << " points..." << std::endl;
+    }
+
+    for (const auto& point : pp) {
+      const auto ray =
+          Ray::fromOriginEnd(origin, point);
+
+      const auto intersect = traverseVoxelGrid(ray, grid_, traversedVoxels, 0.0, 1.0);
+      for (const auto& tv : traversedVoxels){
+        EXPECT_TRUE((tv >= 0).all());
+        EXPECT_TRUE((tv < grid_.numVoxels()).all());
+      }
+      EXPECT_LE(traversedVoxels.size(), 512);
+    }
   }
 }
