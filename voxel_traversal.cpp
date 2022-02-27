@@ -55,6 +55,7 @@ bool traverseVoxelGrid(const Ray& ray, const Grid3DSpatialDef& grid,
                        std::vector<Grid3DSpatialDef::Index3d>& traversed_voxels,
                        float_type t0, float_type t1) noexcept {
   using int_type = Grid3DSpatialDef::int_type;
+  using Index = Grid3DSpatialDef::Index3d;
   traversed_voxels.clear();
 
   float_type tMin{};
@@ -73,120 +74,52 @@ bool traverseVoxelGrid(const Ray& ray, const Grid3DSpatialDef& grid,
       ((ray_start - grid.minBound()).array() / grid.voxelSize().array())
           .floor()
           .cast<int_type>();
-  const auto voxelIndexStart =
+  Index current_index =
       voxelIndexStartUnlimited.cwiseMax(0).cwiseMin(grid.numVoxels() - 1);
 
   const auto voxelIndexEndUnlimited =
       ((ray_end - grid.minBound()).array() / grid.voxelSize().array())
           .floor()
           .cast<int_type>();
-  const auto voxelIndexEnd =
+  const auto final_index =
       voxelIndexEndUnlimited.cwiseMax(0).cwiseMin(grid.numVoxels() - 1);
-
-  size_t current_X_index = voxelIndexStart.x();
-  size_t current_Y_index = voxelIndexStart.y();
-  size_t current_Z_index = voxelIndexStart.z();
-  size_t end_X_index = voxelIndexEnd.x();
-  size_t end_Y_index = voxelIndexEnd.y();
-  size_t end_Z_index = voxelIndexEnd.z();
 
   //  const auto t_max_xyz = grid.minBound() +
   const auto index_delta = (ray.direction().array() > 0.0).cast<int_type>();
-  const auto start_index = current_X_index + index_delta;
-  const auto t_max_xyz = ((grid.minBound().array() +
-                          ((start_index.cast<float_type>() * grid.voxelSize()) -
-                           ray_start.array())) /
-                              ray.direction().array()) + tMin;
+  const auto start_index = current_index + index_delta;
+  const auto t_max_xyz =
+      ((grid.minBound().array() +
+        ((start_index.cast<float_type>() * grid.voxelSize()) -
+         ray_start.array())) /
+       ray.direction().array()) +
+      tMin;
 
   auto tmax = (ray.direction().array() == 0.0).select(tMax, t_max_xyz).eval();
+  const auto step_float = ray.direction().array().sign().eval();
+  const auto step = step_float.cast<int_type>();
+  const auto delta =
+      (step == 0)
+          .select(tMax, grid.voxelSize() / ray.direction().array() * step_float)
+          .eval();
 
-  int_type stepX;
-  float_type tDeltaX;
-  float_type tMaxX;
-  if (ray.direction().x() > 0.0) {
-    stepX = 1;
-    tDeltaX = grid.voxelSize().x() / ray.direction().x();
-    tMaxX =
-        tMin + (grid.minBound().x() +
-                (current_X_index + 1) * grid.voxelSize().x() - ray_start.x()) /
-                   ray.direction().x();
-  } else if (ray.direction().x() < 0.0) {
-    stepX = -1;
-    tDeltaX = grid.voxelSize().x() / -ray.direction().x();
-    tMaxX = tMin + (grid.minBound().x() +
-                    current_X_index * grid.voxelSize().x() - ray_start.x()) /
-                       ray.direction().x();
-  } else {
-    stepX = 0;
-    tDeltaX = tMax;
-    tMaxX = tMax;
-  }
+  traversed_voxels.push_back(current_index);
 
-  int_type stepY;
-  float_type tDeltaY;
-  float_type tMaxY;
-  if (ray.direction().y() > 0.0) {
-    stepY = 1;
-    tDeltaY = grid.voxelSize().y() / ray.direction().y();
-    tMaxY =
-        tMin + (grid.minBound().y() +
-                (current_Y_index + 1) * grid.voxelSize().y() - ray_start.y()) /
-                   ray.direction().y();
-  } else if (ray.direction().y() < 0.0) {
-    stepY = -1;
-    tDeltaY = grid.voxelSize().y() / -ray.direction().y();
-    tMaxY = tMin + (grid.minBound().y() +
-                    current_Y_index * grid.voxelSize().y() - ray_start.y()) /
-                       ray.direction().y();
-  } else {
-    stepY = 0;
-    tDeltaY = tMax;
-    tMaxY = tMax;
-  }
-
-  int_type stepZ;
-  float_type tDeltaZ;
-  float_type tMaxZ;
-  if (ray.direction().z() > 0.0) {
-    stepZ = 1;
-    tDeltaZ = grid.voxelSize().z() / ray.direction().z();
-    tMaxZ =
-        tMin + (grid.minBound().z() +
-                (current_Z_index + 1) * grid.voxelSize().z() - ray_start.z()) /
-                   ray.direction().z();
-  } else if (ray.direction().z() < 0.0) {
-    stepZ = -1;
-    tDeltaZ = grid.voxelSize().z() / -ray.direction().z();
-    tMaxZ = tMin + (grid.minBound().z() +
-                    current_Z_index * grid.voxelSize().z() - ray_start.z()) /
-                       ray.direction().z();
-  } else {
-    stepZ = 0;
-    tDeltaZ = tMax;
-    tMaxZ = tMax;
-  }
-
-  traversed_voxels.emplace_back(current_X_index, current_Y_index,
-                                current_Z_index);
-
-  while (current_X_index != end_X_index || current_Y_index != end_Y_index ||
-         current_Z_index != end_Z_index) {
-    if (tMaxX < tMaxY && tMaxX < tMaxZ) {
+  while ((current_index != final_index).any()) {
+    if (tmax.x() < tmax.y() && tmax.x() < tmax.z()) {
       // X-axis traversal.
-      current_X_index += stepX;
-      tMaxX += tDeltaX;
-    } else if (tMaxY < tMaxZ) {
+      current_index.x() += step.x();
+      tmax.x() += delta.x();
+    } else if (tmax.y() < tmax.z()) {
       // Y-axis traversal.
-      current_Y_index += stepY;
-      tMaxY += tDeltaY;
+      current_index.y() += step.y();
+      tmax.y() += delta.y();
     } else {
       // Z-axis traversal.
-      current_Z_index += stepZ;
-      tMaxZ += tDeltaZ;
+      current_index.z() += step.z();
+      tmax.z() += delta.z();
     }
 
-    traversed_voxels.emplace_back(current_X_index, current_Y_index,
-                                  current_Z_index);
+    traversed_voxels.push_back(current_index);
   }
 
   return true;
