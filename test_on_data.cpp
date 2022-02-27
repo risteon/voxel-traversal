@@ -24,7 +24,8 @@ class TestOnData : public ::testing::Test {
   void SetUp() override {
     const V3 bound_min(0.0, -25.6, -2.0);
     const V3 bound_max(51.2, 25.6, 4.4);
-    const C3 voxel_count(256, 256, 32);
+//    const C3 voxel_count(256, 256, 32);
+    const C3 voxel_count(512, 512, 64);
     grid_ = Grid3DSpatialDef(bound_min, bound_max, voxel_count);
 
     ReadPoints(points_raw_, "points.bin");
@@ -235,7 +236,7 @@ TEST_F(TestOnData, sanityCheckTraversalCalculation) {
         EXPECT_TRUE((tv >= 0).all());
         EXPECT_TRUE((tv < grid_.numVoxels()).all());
       }
-      EXPECT_LE(traversedVoxels.size(), 512);
+      EXPECT_LE(traversedVoxels.size(), grid_.numVoxels().x() + grid_.numVoxels().y());
     }
   }
 }

@@ -1,10 +1,11 @@
-#ifndef VOXEL_TRAVERSAL_GRID3DSPATIALDEF_H
-#define VOXEL_TRAVERSAL_GRID3DSPATIALDEF_H
+#ifndef VOXEL_TRAVERSAL_GRID_H
+#define VOXEL_TRAVERSAL_GRID_H
 
-#include <Eigen/Dense>
+#include <Eigen/Geometry>
+#include <unsupported/Eigen/CXX11/Tensor>
 #include <cstddef>
 
-// TODO(risteon): make templates
+// TODO(risteon): make templates for single/double precision
 // template<typename float_type = double>
 class Grid3DSpatialDef {
  public:
@@ -16,6 +17,8 @@ class Grid3DSpatialDef {
   using Index3d = Eigen::Array<int_type, 3, 1>;
 
   Grid3DSpatialDef() = default;
+  virtual ~Grid3DSpatialDef() = default;
+
   Grid3DSpatialDef& operator=(Grid3DSpatialDef other) {
     swap(*this, other);
     return *this;
@@ -38,7 +41,7 @@ class Grid3DSpatialDef {
   [[nodiscard]] const Index3d& numVoxels() const { return num_voxels_; }
 
   [[nodiscard]] const Vector3d& minBound() const { return min_bound_; }
-  [[nodiscard]] const Vector3d&  maxBound() const { return max_bound_; }
+  [[nodiscard]] const Vector3d& maxBound() const { return max_bound_; }
   [[nodiscard]] const Size3d& gridSize() const { return grid_size_; }
   [[nodiscard]] const Size3d& voxelSize() const { return voxel_size_; }
 
@@ -65,6 +68,14 @@ class Grid3DSpatialDef {
   Size3d voxel_size_;
 };
 
-class Grid3DTraversalCounter : public Grid3DSpatialDef {};
+class Grid3DTraversalCounter : public Grid3DSpatialDef {
+ public:
+  using counter_type = uint64_t;
+  using tensor_type = Eigen::Tensor<counter_type, 3>;
 
-#endif  // VOXEL_TRAVERSAL_GRID3DSPATIALDEF_H
+ private:
+  tensor_type counter_;
+
+};
+
+#endif  // VOXEL_TRAVERSAL_GRID_H

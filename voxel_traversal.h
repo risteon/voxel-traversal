@@ -1,8 +1,8 @@
 #ifndef VOXEL_TRAVERSAL_H
 #define VOXEL_TRAVERSAL_H
 
-#include "Grid3DSpatialDef.h"
-#include "Ray.h"
+#include "grid.h"
+#include "ray.h"
 
 namespace algorithm {
 // Implements the algorithm presented in Amanatides & Woo's "A Fast Voxel
@@ -13,13 +13,8 @@ namespace algorithm {
 // determine the begin and end parameter for which the ray travels. The
 // algorithm occurs in two phases, initialization and traversal. Requires:
 //     t1 > t0
-//     0.0 <= t0 <= 1.0
-//     0.0 <= t1 <= 1.0
 //     To encapsulate entire ray traversal, set t0 = 0.0, t1 = 1.0
 //     'grid' encapsulates a valid voxel grid system.
-//
-// Notes:
-//     Assumes that indices for voxel coordinates begin at 1.
 
 using float_type = double;
 
@@ -28,6 +23,11 @@ bool traverseVoxelGrid(
     std::vector<Grid3DSpatialDef::Index3d>& traversed_voxels,
                        float_type t0 = float_type{0.0},
                        float_type t1 = float_type{1.0}) noexcept;
+
+bool traverseVoxelGrid(
+    const Ray& ray, const Grid3DTraversalCounter& grid,
+    float_type t0 = float_type{0.0},
+    float_type t1 = float_type{1.0}) noexcept;
 
 [[nodiscard]] bool rayBoxIntersection(const Ray& ray,
                                       const Grid3DSpatialDef& grid,

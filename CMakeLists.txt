@@ -32,6 +32,17 @@ target_link_libraries(
 )
 ##################################
 add_executable(
+        test_voxel_counter
+        test_voxel_counter.cpp
+        voxel_traversal.cpp
+)
+target_link_libraries(
+        test_voxel_counter
+        Eigen3::Eigen
+        gtest_main
+)
+##################################
+add_executable(
         test_voxel_intersect
         test_voxel_intersect.cpp
         voxel_traversal.cpp
@@ -55,5 +66,6 @@ target_link_libraries(
 
 include(GoogleTest)
 gtest_discover_tests(test_voxel_traversal)
+gtest_discover_tests(test_voxel_counter)
 gtest_discover_tests(test_voxel_intersect)
 gtest_discover_tests(test_on_data PROPERTIES ENVIRONMENT "DATADIR=${CMAKE_CURRENT_SOURCE_DIR}/data/")
