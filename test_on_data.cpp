@@ -2,7 +2,9 @@
 //
 #include <gtest/gtest.h>
 
+#include <chrono>
 #include <fstream>
+#include <iostream>
 #include <limits>
 #include <numeric>
 
@@ -18,10 +20,6 @@ class TestOnData : public ::testing::Test {
   using C3 = Grid3DSpatialDef::Count3d;
   using V3f = Eigen::Vector3f;
 
-  static const constexpr Grid3DSpatialDef::float_type SQRT2 = sqrt(2.0);
-  static const constexpr Grid3DSpatialDef::float_type HALF_SQRT2 = 0.5 * SQRT2;
-  static const constexpr Grid3DSpatialDef::float_type SQRT3 = sqrt(3.0);
-
   void SetUp() override {
     const V3 bound_min(0.0, -25.6, -2.0);
     const V3 bound_max(51.2, 25.6, 4.4);
@@ -33,6 +31,9 @@ class TestOnData : public ::testing::Test {
     ReadPoints(frame_counts_, "counts.bin");
 
     TransformRawData();
+    // clean up
+    points_raw_.clear();
+    origins_raw_.clear();
   }
 
   void TransformRawData() {
@@ -42,9 +43,9 @@ class TestOnData : public ::testing::Test {
     const auto num_frames = origins_raw_.size() / 3;
     const auto num_points = points_raw_.size() / 3;
     ASSERT_EQ(num_frames, frame_counts_.size());
-    const auto total_from_index =
+    total_point_count_ =
         std::accumulate(frame_counts_.cbegin(), frame_counts_.cend(), 0);
-    ASSERT_EQ(total_from_index, num_points);
+    ASSERT_EQ(total_point_count_, num_points);
 
     origins_.resize(num_frames);
     points_.resize(num_frames);
@@ -62,6 +63,8 @@ class TestOnData : public ::testing::Test {
       batch_count += frame_count;
       ++current_frame;
     }
+
+    ASSERT_EQ(points_.size(), origins_.size());
   }
 
   template <typename Scalar>
@@ -69,6 +72,7 @@ class TestOnData : public ::testing::Test {
                          const std::string& filename) {
     const char* datadir = std::getenv("DATADIR");
     ASSERT_TRUE(datadir != nullptr) << "Env variable 'DATADIR' not available.";
+
 
     const auto filepath = std::string(datadir) + filename;
     std::ifstream f_points(filepath, std::ios::binary | std::ios::in);
@@ -96,14 +100,55 @@ class TestOnData : public ::testing::Test {
   // multiple frames with their respective origin
   std::vector<std::vector<V3f>> points_;
   std::vector<V3f> origins_;
+  std::size_t total_point_count_;
 };
 
-TEST_F(TestOnData, calcIntersections) {
+TEST_F(TestOnData, timeIntersectionCalculation) {
+  using std::chrono::duration;
+  using std::chrono::duration_cast;
+  using std::chrono::high_resolution_clock;
+
   double t_min, t_max;
-  {
-    //
-    const auto ray = Ray::fromEndpoints({-0.5, -0.5, -0.5}, {2.0, 2.0, 2.0});
-    const auto intersect = rayBoxIntersection(ray, grid_, t_min, t_max);
-    EXPECT_TRUE(true);
+  uint32_t intersection_count{0};
+
+  auto t1 = high_resolution_clock::now();
+  for (std::size_t frame = 0; frame < points_.size(); ++frame) {
+    const auto& pp = points_[frame];
+    const V3f& origin = origins_[frame];
+
+    if (frame % 50 == 0) {
+      std::cout << "...processing frame #" << frame << " with #" << pp.size()
+                << " points..." << std::endl;
+    }
+
+    for (const auto& point : pp) {
+      const auto ray =
+          Ray::fromEndpoints(origin.cast<double>(), point.cast<double>());
+      const auto intersect = rayBoxIntersection(ray, grid_, t_min, t_max);
+      if (intersect) {
+        ++intersection_count;
+      }
+    }
+  }
+  auto t2 = high_resolution_clock::now();
+  const duration<double> ss = t2 - t1;
+
+  std::cout << "Elapsed seconds: " << ss.count() << std::endl;
+  std::cout << "Total number of rays: " << total_point_count_ << std::endl;
+  std::cout << "Total number of intersections: " << intersection_count
+            << std::endl;
+
+  const std::size_t expected_hits{4097337};
+  std::cout << "Expected #" << expected_hits << " hits." << std::endl;
+  if (intersection_count != expected_hits) {
+    std::cout << "!! Deviation of "
+              << (static_cast<double>(intersection_count) /
+                      static_cast<double>(expected_hits) -
+                  1.0) *
+                     100.0
+              << "%" << std::endl;
+  }
+  else {
+    std::cout << "... exactly as expected." << std::endl;
   }
 }
