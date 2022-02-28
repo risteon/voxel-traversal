@@ -17,15 +17,17 @@ class TestVoxelCounter : public ::testing::Test {
   using TraversedVoxels = std::vector<Grid3DSpatialDef::Index3d>;
 
   static const constexpr Grid3DTraversalCounter::float_type SQRT2 = sqrt(2.0);
-  static const constexpr Grid3DTraversalCounter::float_type HALF_SQRT2 = 0.5 * SQRT2;
+  static const constexpr Grid3DTraversalCounter::float_type HALF_SQRT2 =
+      0.5 * SQRT2;
   static const constexpr Grid3DTraversalCounter::float_type SQRT3 = sqrt(3.0);
 
-  void expectCounted(const TraversedVoxels& expected, bool more_allowed = false) const {
+  void expectCounted(const TraversedVoxels& expected,
+                     bool more_allowed = false) const {
     // copy
     Grid3DTraversalCounter::tensor_type counts = grid_.getCounter();
     for (const auto& index : expected) {
       EXPECT_GE(counts(index), 1);
-      counts(index)--;
+      if (counts(index) > 0) counts(index)--;
     }
     if (!more_allowed) {
       const Eigen::Tensor<uint64_t, 0> max_value = counts.maximum();
@@ -37,7 +39,7 @@ class TestVoxelCounter : public ::testing::Test {
 };
 
 // Small voxel grid 2x2x2
-class TestVoxel2x2x2Traversal : public TestVoxelCounter {
+class TestVoxel2x2x2Counter : public TestVoxelCounter {
  protected:
   void SetUp() override {
     const V3 bound_min(0.0, 0.0, 0.0);
@@ -48,7 +50,7 @@ class TestVoxel2x2x2Traversal : public TestVoxelCounter {
 };
 
 // Slightly bigger grid 5x5x5
-class TestVoxel5x5x5Traversal : public TestVoxelCounter {
+class TestVoxel5x5x5Counter : public TestVoxelCounter {
  protected:
   void SetUp() override {
     const V3 bound_min(-10.0, -10.0, -10.0);
@@ -59,7 +61,7 @@ class TestVoxel5x5x5Traversal : public TestVoxelCounter {
 };
 
 // cuboid grid
-class TestVoxel4x2x1Traversal : public TestVoxelCounter {
+class TestVoxel4x2x1Counter : public TestVoxelCounter {
  protected:
   void SetUp() override {
     const V3 bound_min(0.0, 0.0, -50.0);
@@ -69,7 +71,46 @@ class TestVoxel4x2x1Traversal : public TestVoxelCounter {
   }
 };
 
-TEST_F(TestVoxel2x2x2Traversal, AllDirectionsWithinGrid) {
+TEST_F(TestVoxel2x2x2Counter, MultipleRays) {
+  grid_.clear();
+  TraversedVoxels expected{{0, 0, 0}, {1, 0, 0}, {1, 0, 0}, {1, 1, 0},
+                           {1, 0, 0}, {1, 0, 1}, {1, 0, 0}, {0, 0, 0},
+                           {1, 1, 0}, {1, 0, 0}, {1, 0, 1}, {1, 0, 0}};
+  {
+    const auto ray = Ray::fromOriginDir({.5, .5, .5}, {1., 0., 0.});
+    const auto intersect = traverseVoxelGrid(ray, grid_);
+    EXPECT_TRUE(intersect);
+  }
+  {
+    const auto ray = Ray::fromOriginDir({1.5, .5, .5}, {0., 1., 0.});
+    const auto intersect = traverseVoxelGrid(ray, grid_);
+    EXPECT_TRUE(intersect);
+  }
+  {
+    const auto ray = Ray::fromOriginDir({1.5, .5, .5}, {0., 0., 1.});
+    const auto intersect = traverseVoxelGrid(ray, grid_);
+    EXPECT_TRUE(intersect);
+  }
+  // Negative directions
+  {
+    const auto ray = Ray::fromOriginDir({1.5, .5, .5}, {-1., 0., 0.});
+    const auto intersect = traverseVoxelGrid(ray, grid_);
+    EXPECT_TRUE(intersect);
+  }
+  {
+    const auto ray = Ray::fromOriginDir({1.5, 1.5, .5}, {0., -1., 0.});
+    const auto intersect = traverseVoxelGrid(ray, grid_);
+    EXPECT_TRUE(intersect);
+  }
+  {
+    const auto ray = Ray::fromOriginDir({1.5, .5, 1.5}, {0., 0., -1.});
+    const auto intersect = traverseVoxelGrid(ray, grid_);
+    EXPECT_TRUE(intersect);
+  }
+  expectCounted(expected);
+}
+
+TEST_F(TestVoxel2x2x2Counter, AllDirectionsWithinGrid) {
   {
     // should traverse two voxels in X dir. Ray completely within grid
     grid_.clear();
@@ -127,7 +168,7 @@ TEST_F(TestVoxel2x2x2Traversal, AllDirectionsWithinGrid) {
   }
 }
 
-TEST_F(TestVoxel2x2x2Traversal, SingleVoxel) {
+TEST_F(TestVoxel2x2x2Counter, SingleVoxel) {
   {
     // only single voxel, ray too short to reach second
     grid_.clear();
@@ -159,7 +200,7 @@ TEST_F(TestVoxel2x2x2Traversal, SingleVoxel) {
   }
 }
 
-TEST_F(TestVoxel2x2x2Traversal, NoVoxel) {
+TEST_F(TestVoxel2x2x2Counter, NoVoxel) {
   {
     // only single voxel, ray too short to reach second
     grid_.clear();
@@ -171,7 +212,7 @@ TEST_F(TestVoxel2x2x2Traversal, NoVoxel) {
   }
 }
 
-TEST_F(TestVoxel5x5x5Traversal, Diagonal) {
+TEST_F(TestVoxel5x5x5Counter, Diagonal) {
   float_type t_min, t_max;
   {
     // full diagonal. We do not assert specific order of off-diagonal voxels
@@ -192,7 +233,7 @@ TEST_F(TestVoxel5x5x5Traversal, Diagonal) {
   }
 }
 
-TEST_F(TestVoxel4x2x1Traversal, StoppingStartingRay) {
+TEST_F(TestVoxel4x2x1Counter, StoppingStartingRay) {
   {
     grid_.clear();
     const auto ray = Ray::fromOriginEnd({1.5, 0.8, -25.0}, {6.0, 1.7, -25.0});
