@@ -22,8 +22,12 @@ enable_testing()
 ##################################
 add_executable(
         test_voxel_traversal
-        test_voxel_traversal.cpp
+        test/test_voxel_traversal.cpp
         voxel_traversal.cpp
+)
+target_include_directories(test_voxel_traversal PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+        $<INSTALL_INTERFACE:include/voxel_traversal>
 )
 target_link_libraries(
         test_voxel_traversal
@@ -33,9 +37,13 @@ target_link_libraries(
 ##################################
 add_executable(
         test_voxel_counter
-        test_voxel_counter.cpp
+        test/test_voxel_counter.cpp
         voxel_traversal.cpp
 )
+target_include_directories(test_voxel_counter PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+  $<INSTALL_INTERFACE:include/voxel_traversal>
+  )
 target_link_libraries(
         test_voxel_counter
         Eigen3::Eigen
@@ -44,9 +52,13 @@ target_link_libraries(
 ##################################
 add_executable(
         test_voxel_intersect
-        test_voxel_intersect.cpp
+        test/test_voxel_intersect.cpp
         voxel_traversal.cpp
 )
+target_include_directories(test_voxel_intersect PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+  $<INSTALL_INTERFACE:include/voxel_traversal>
+  )
 target_link_libraries(
         test_voxel_intersect
         Eigen3::Eigen
@@ -55,9 +67,13 @@ target_link_libraries(
 ##################################
 add_executable(
         test_on_data
-        test_on_data.cpp
+        test/test_on_data.cpp
         voxel_traversal.cpp
 )
+target_include_directories(test_on_data PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+  $<INSTALL_INTERFACE:include/voxel_traversal>
+  )
 target_link_libraries(
         test_on_data
         Eigen3::Eigen
