@@ -2,8 +2,8 @@
 #define VOXEL_TRAVERSAL_GRID_H
 
 #include <Eigen/Geometry>
-#include <unsupported/Eigen/CXX11/Tensor>
 #include <cstddef>
+#include <unsupported/Eigen/CXX11/Tensor>
 
 // TODO(risteon): make templates for single/double precision
 // template<typename float_type = double>
@@ -55,7 +55,7 @@ class Grid3DSpatialDef {
     swap(first.voxel_size_, second.voxel_size_);
   }
 
- private:
+ protected:
   // The minimum bound vector of the voxel grid.
   Vector3d min_bound_;
   // The maximum bound vector of the voxel grid.
@@ -73,9 +73,50 @@ class Grid3DTraversalCounter : public Grid3DSpatialDef {
   using counter_type = uint64_t;
   using tensor_type = Eigen::Tensor<counter_type, 3>;
 
+  Grid3DTraversalCounter() = default;
+  virtual ~Grid3DTraversalCounter() = default;
+
+  Grid3DTraversalCounter& operator=(Grid3DTraversalCounter other) {
+    swap(*this, other);
+    return *this;
+  }
+  Grid3DTraversalCounter(Grid3DTraversalCounter&& other) noexcept
+      : Grid3DTraversalCounter() {
+    swap(*this, other);
+  }
+
+  Grid3DTraversalCounter(const Vector3d& min_bound, const Vector3d& max_bound,
+                         const Index3d& num_voxels)
+      : Grid3DSpatialDef(min_bound, max_bound, num_voxels),
+        counter_(tensor_type(num_voxels[0], num_voxels[1], num_voxels[2])) {
+    assert((num_voxels_ > 0).all());
+    assert((min_bound_.array() < max_bound_.array()).all());
+    counter_.setZero();
+  }
+
+  [[nodiscard]] const tensor_type& getCounter() const { return counter_; }
+
+  void clear() {
+    counter_.setZero();
+  }
+  void increaseAt(const Index3d& index) {
+    counter_(index)++;
+  }
+
+  friend void swap(Grid3DTraversalCounter& first,
+                   Grid3DTraversalCounter& second) noexcept {
+    using std::swap;
+    // TOOD(risteon) good option to call base class swap?
+    swap(first.min_bound_, second.min_bound_);
+    swap(first.max_bound_, second.max_bound_);
+    swap(first.grid_size_, second.grid_size_);
+    swap(first.num_voxels_, second.num_voxels_);
+    swap(first.voxel_size_, second.voxel_size_);
+    swap(first.counter_, second.counter_);
+  }
+
  private:
   tensor_type counter_;
-
 };
 
 #endif  // VOXEL_TRAVERSAL_GRID_H

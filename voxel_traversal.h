@@ -25,7 +25,7 @@ bool traverseVoxelGrid(
                        float_type t1 = float_type{1.0}) noexcept;
 
 bool traverseVoxelGrid(
-    const Ray& ray, const Grid3DTraversalCounter& grid,
+    const Ray& ray, Grid3DTraversalCounter& grid,
     float_type t0 = float_type{0.0},
     float_type t1 = float_type{1.0}) noexcept;
 

@@ -51,12 +51,14 @@ namespace algorithm {
   return (tMin < t1 && tMax > t0);
 }
 
-bool traverseVoxelGrid(const Ray& ray, const Grid3DSpatialDef& grid,
-                       std::vector<Grid3DSpatialDef::Index3d>& traversed_voxels,
-                       float_type t0, float_type t1) noexcept {
+template <typename Grid>
+bool setupTraversal(const Ray& ray, const Grid& grid, float_type t0,
+                    float_type t1, typename Grid::Size3d& delta,
+                    typename Grid::Size3d& tmax,
+                    typename Grid::Index3d& step_index,
+                    typename Grid::Index3d& current_index,
+                    typename Grid::Index3d& final_index) {
   using int_type = Grid3DSpatialDef::int_type;
-  using Index = Grid3DSpatialDef::Index3d;
-  traversed_voxels.clear();
 
   float_type tMin{};
   float_type tMax{};
@@ -73,15 +75,15 @@ bool traverseVoxelGrid(const Ray& ray, const Grid3DSpatialDef& grid,
   const auto voxelIndexStartUnlimited =
       ((ray_start - grid.minBound()).array() / grid.voxelSize().array())
           .floor()
-          .cast<int_type>();
-  Index current_index =
+          .template cast<int_type>();
+  current_index =
       voxelIndexStartUnlimited.cwiseMax(0).cwiseMin(grid.numVoxels() - 1);
 
   const auto voxelIndexEndUnlimited =
       ((ray_end - grid.minBound()).array() / grid.voxelSize().array())
           .floor()
-          .cast<int_type>();
-  const auto final_index =
+          .template cast<int_type>();
+  final_index =
       voxelIndexEndUnlimited.cwiseMax(0).cwiseMin(grid.numVoxels() - 1);
 
   //  const auto t_max_xyz = grid.minBound() +
@@ -89,33 +91,87 @@ bool traverseVoxelGrid(const Ray& ray, const Grid3DSpatialDef& grid,
   const auto start_index = current_index + index_delta;
   const auto t_max_xyz =
       ((grid.minBound().array() +
-        ((start_index.cast<float_type>() * grid.voxelSize()) -
+        ((start_index.template cast<float_type>() * grid.voxelSize()) -
          ray_start.array())) /
        ray.direction().array()) +
       tMin;
 
-  auto tmax = (ray.direction().array() == 0.0).select(tMax, t_max_xyz).eval();
+  tmax = (ray.direction().array() == 0.0).select(tMax, t_max_xyz);
   const auto step_float = ray.direction().array().sign().eval();
-  const auto step = step_float.cast<int_type>();
-  const auto delta =
-      (step == 0)
-          .select(tMax, grid.voxelSize() / ray.direction().array() * step_float)
-          .eval();
+  step_index = step_float.cast<int_type>().eval();
+  delta = (step_index == 0)
+              .select(tMax,
+                      grid.voxelSize() / ray.direction().array() * step_float);
+
+  return true;
+}
+
+bool traverseVoxelGrid(const Ray& ray, Grid3DTraversalCounter& grid,
+                       float_type t0, float_type t1) noexcept {
+  Grid3DTraversalCounter::Size3d delta{};
+  Grid3DTraversalCounter::Size3d tmax{};
+  Grid3DTraversalCounter::Index3d step_index{};
+  Grid3DTraversalCounter::Index3d current_index{};
+  Grid3DTraversalCounter::Index3d final_index{};
+  using int_type = Grid3DSpatialDef::int_type;
+
+  const auto intersect = setupTraversal(ray, grid, t0, t1, delta, tmax,
+                                        step_index, current_index, final_index);
+
+  if (!intersect) return false;
+
+  grid.increaseAt(current_index);
+
+  while ((current_index != final_index).any()) {
+    if (tmax.x() < tmax.y() && tmax.x() < tmax.z()) {
+      // X-axis traversal.
+      current_index.x() += step_index.x();
+      tmax.x() += delta.x();
+    } else if (tmax.y() < tmax.z()) {
+      // Y-axis traversal.
+      current_index.y() += step_index.y();
+      tmax.y() += delta.y();
+    } else {
+      // Z-axis traversal.
+      current_index.z() += step_index.z();
+      tmax.z() += delta.z();
+    }
+    grid.increaseAt(current_index);
+  }
+
+  return true;
+}
+
+bool traverseVoxelGrid(const Ray& ray, const Grid3DSpatialDef& grid,
+                       std::vector<Grid3DSpatialDef::Index3d>& traversed_voxels,
+                       float_type t0, float_type t1) noexcept {
+  Grid3DSpatialDef::Size3d delta{};
+  Grid3DSpatialDef::Size3d tmax{};
+  Grid3DSpatialDef::Index3d step_index{};
+  Grid3DSpatialDef::Index3d current_index{};
+  Grid3DSpatialDef::Index3d final_index{};
+  using int_type = Grid3DSpatialDef::int_type;
+
+  traversed_voxels.clear();
+
+  const auto intersect = setupTraversal(ray, grid, t0, t1, delta, tmax,
+                                        step_index, current_index, final_index);
+  if (!intersect) return false;
 
   traversed_voxels.push_back(current_index);
 
   while ((current_index != final_index).any()) {
     if (tmax.x() < tmax.y() && tmax.x() < tmax.z()) {
       // X-axis traversal.
-      current_index.x() += step.x();
+      current_index.x() += step_index.x();
       tmax.x() += delta.x();
     } else if (tmax.y() < tmax.z()) {
       // Y-axis traversal.
-      current_index.y() += step.y();
+      current_index.y() += step_index.y();
       tmax.y() += delta.y();
     } else {
       // Z-axis traversal.
-      current_index.z() += step.z();
+      current_index.z() += step_index.z();
       tmax.z() += delta.z();
     }
 
