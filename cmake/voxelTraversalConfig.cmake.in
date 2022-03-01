@@ -1,0 +1,6 @@
+# This file exports the voxelTraversal:: CMake target which should be passed to the
+# target_link_libraries command.
+
+@PACKAGE_INIT@
+
+include ("${CMAKE_CURRENT_LIST_DIR}/voxelTraversalTargets.cmake")

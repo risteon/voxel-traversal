@@ -7,17 +7,19 @@ It is based on the code prototype of Chris Gyurgyik
 [Fast-Voxel-Traversal-Algorithm](https://github.com/cgyurgyik/fast-voxel-traversal-algorithm).
 
 The contributions of this repository are:
-* Tests!
+* **Tests!**
 * C++17 compatibility
+* Installation and cmake packaging
 * Use Eigen for readability, vectorization, and grid counting.
 * Execution and timing on real LiDAR data from the [nuScenes dataset](https://www.nuscenes.org/). The demonstration data files are bundled with git lfs.
 
-## Run the tests
+## Run the tests and install
 ```bash
 $ git clone https://github.com/risteon/voxel-traversal.git
 $ mkdir build && cd build
-$ cmake -DCMAKE_BUILD_TYPE=Release ..
+$ cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../install ..
 $ cmake --build . --target all
+$ cmake --build . --target install
 $ ctest
 ```
 
