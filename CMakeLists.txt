@@ -80,11 +80,18 @@ FetchContent_MakeAvailable(googletest)
 
 # ------------- VOXEL TRAVERSAL LIBRARY -----------------
 add_library(voxel_traversal SHARED voxel_traversal.cpp)
-target_link_libraries(voxel_traversal Eigen3::Eigen)
+
+set_target_properties(voxel_traversal PROPERTIES EXPORT_NAME voxel_traversal)
+set_target_properties(voxel_traversal PROPERTIES VERSION ${PROJECT_VERSION})
+set_target_properties(voxel_traversal PROPERTIES SOVERSION ${PROJECT_VERSION})
+set_target_properties(voxel_traversal PROPERTIES PUBLIC_HEADER "grid.h;ray.h;voxel_traversal.h")
+
 target_include_directories(voxel_traversal PUBLIC
   $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
   $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
+
+target_link_libraries(voxel_traversal Eigen3::Eigen)
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
   target_compile_options(voxel_traversal PRIVATE ${CXX_CLANG_COMPILE_OPTIONS})
