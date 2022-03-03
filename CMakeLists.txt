@@ -8,7 +8,7 @@ if (POLICY CMP0003)
   cmake_policy(SET CMP0003 NEW)
 endif()
 
-project(voxel_traversal VERSION 0.1 LANGUAGES CXX)
+project(VoxelTraversal VERSION 0.1 LANGUAGES CXX)
 
 # guard against in-source builds
 if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
@@ -40,7 +40,7 @@ include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
 
 set(CMAKEPACKAGE_INSTALL_DIR
-  "${CMAKE_INSTALL_DATADIR}/voxel_traversal/cmake"
+  "${CMAKE_INSTALL_DATADIR}/VoxelTraversal/cmake"
   CACHE PATH "The directory relative to CMAKE_PREFIX_PATH where voxelTraversal.cmake is installed"
   )
 
@@ -81,7 +81,7 @@ FetchContent_MakeAvailable(googletest)
 # ------------- VOXEL TRAVERSAL LIBRARY -----------------
 add_library(voxel_traversal SHARED voxel_traversal.cpp)
 
-set_target_properties(voxel_traversal PROPERTIES EXPORT_NAME voxel_traversal)
+set_target_properties(voxel_traversal PROPERTIES EXPORT_NAME VoxelTraversal)
 set_target_properties(voxel_traversal PROPERTIES VERSION ${PROJECT_VERSION})
 set_target_properties(voxel_traversal PROPERTIES SOVERSION ${PROJECT_VERSION})
 set_target_properties(voxel_traversal PROPERTIES PUBLIC_HEADER "grid.h;ray.h;voxel_traversal.h")
@@ -100,7 +100,7 @@ elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 endif()
 
 set(voxel_traversal_INCLUDE_INSTALL_DIR
-  "${CMAKE_INSTALL_INCLUDEDIR}/voxel_traversal"
+  "${CMAKE_INSTALL_INCLUDEDIR}/VoxelTraversal"
   CACHE PATH "The directory relative to CMAKE_PREFIX_PATH where voxel_traversal header files are installed"
   )
 
@@ -113,7 +113,7 @@ install(TARGETS voxel_traversal EXPORT voxelTraversalTargets
 
 # The voxelTraversal target will be located in the voxelTraversal namespace.
 # Other CMake targets can refer to it using voxelTraversal::<lib>.
-export(TARGETS voxel_traversal NAMESPACE voxelTraversal:: FILE voxelTraversalTargets.cmake)
+export(TARGETS voxel_traversal NAMESPACE VoxelTraversal:: FILE VoxelTraversalTargets.cmake)
 
 # ------------------- TESTS -------------------
 enable_testing()
@@ -125,7 +125,7 @@ add_executable(
 )
 target_include_directories(test_voxel_traversal PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-  $<INSTALL_INTERFACE:include/voxel_traversal>
+  $<INSTALL_INTERFACE:include/VoxelTraversal>
   )
 target_link_libraries(
   test_voxel_traversal
@@ -140,7 +140,7 @@ add_executable(
 )
 target_include_directories(test_voxel_counter PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-  $<INSTALL_INTERFACE:include/voxel_traversal>
+  $<INSTALL_INTERFACE:include/VoxelTraversal>
   )
 target_link_libraries(
   test_voxel_counter
@@ -155,7 +155,7 @@ add_executable(
 )
 target_include_directories(test_voxel_intersect PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-  $<INSTALL_INTERFACE:include/voxel_traversal>
+  $<INSTALL_INTERFACE:include/VoxelTraversal>
   )
 target_link_libraries(
   test_voxel_intersect
@@ -170,7 +170,7 @@ add_executable(
 )
 target_include_directories(test_on_data PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-  $<INSTALL_INTERFACE:include/voxel_traversal>
+  $<INSTALL_INTERFACE:include/VoxelTraversal>
   )
 target_link_libraries(
   test_on_data
@@ -187,21 +187,21 @@ gtest_discover_tests(test_on_data PROPERTIES ENVIRONMENT "DATADIR=${CMAKE_CURREN
 
 # ------------------------ INSTALL -------------------------
 configure_package_config_file(
-  ${CMAKE_CURRENT_SOURCE_DIR}/cmake/voxelTraversalConfig.cmake.in
-  ${CMAKE_CURRENT_BINARY_DIR}/voxelTraversalConfig.cmake
+  ${CMAKE_CURRENT_SOURCE_DIR}/cmake/VoxelTraversalConfig.cmake.in
+  ${CMAKE_CURRENT_BINARY_DIR}/VoxelTraversalConfig.cmake
   PATH_VARS voxel_traversal_INCLUDE_DIRS voxel_traversal_ROOT_DIR
   INSTALL_DESTINATION ${CMAKEPACKAGE_INSTALL_DIR}
 )
 
-write_basic_package_version_file (voxelTraversalConfigVersion.cmake
+write_basic_package_version_file (VoxelTraversalConfigVersion.cmake
   VERSION ${PROJECT_VERSION}
   COMPATIBILITY SameMajorVersion
 )
 
 export(PACKAGE ${PROJECT_NAME})
 
-install(EXPORT voxelTraversalTargets NAMESPACE voxelTraversal:: DESTINATION ${CMAKEPACKAGE_INSTALL_DIR})
+install(EXPORT voxelTraversalTargets NAMESPACE VoxelTraversal:: DESTINATION ${CMAKEPACKAGE_INSTALL_DIR})
 
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/voxelTraversalConfig.cmake
-  ${CMAKE_CURRENT_BINARY_DIR}/voxelTraversalConfigVersion.cmake
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/VoxelTraversalConfig.cmake
+  ${CMAKE_CURRENT_BINARY_DIR}/VoxelTraversalConfigVersion.cmake
   DESTINATION ${CMAKEPACKAGE_INSTALL_DIR})
