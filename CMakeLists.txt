@@ -111,8 +111,8 @@ install(TARGETS voxel_traversal EXPORT voxelTraversalTargets
   PUBLIC_HEADER DESTINATION ${voxel_traversal_INCLUDE_INSTALL_DIR}
   )
 
-# The voxelTraversal target will be located in the voxelTraversal namespace.
-# Other CMake targets can refer to it using voxelTraversal::<lib>.
+# The VoxelTraversal target will be located in the VoxelTraversal namespace.
+# Other CMake targets can refer to it using VoxelTraversal::<lib>.
 export(TARGETS voxel_traversal NAMESPACE VoxelTraversal:: FILE VoxelTraversalTargets.cmake)
 
 # ------------------- TESTS -------------------
