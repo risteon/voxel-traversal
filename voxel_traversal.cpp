@@ -2,7 +2,7 @@
 
 #include <numeric>
 
-namespace algorithm {
+namespace voxel_traversal {
 
 // Uses the improved version of Smit's algorithm to determine if the given ray
 // will intersect the grid between tMin and tMax. This version causes an
@@ -181,4 +181,4 @@ bool traverseVoxelGrid(const Ray& ray, const Grid3DSpatialDef& grid,
   return true;
 }
 
-}  // namespace algorithm
+}  // namespace voxel_traversal

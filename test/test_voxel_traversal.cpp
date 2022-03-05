@@ -6,7 +6,7 @@
 
 #include "voxel_traversal.h"
 
-using namespace algorithm;
+using namespace voxel_traversal;
 
 // Small voxel grid 2x2x2
 class TestVoxelTraversal : public ::testing::Test {

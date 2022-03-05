@@ -30,7 +30,7 @@ $ ctest
 
 ## Include & Usage Example
 
-Your projects' CMakeLists.txt:
+Your project's CMakeLists.txt:
 ```cmake
 cmake_minimum_required(VERSION 3.21)
 project(your_project)
@@ -42,7 +42,7 @@ find_package(VoxelTraversal REQUIRED)
 add_executable(your_executable main.cpp)
 target_link_libraries(your_executable VoxelTraversal::VoxelTraversal)
 ```
-When configuring, set `CMAKE_PREFIX_PATH` to this projects install directory.
+When configuring, set `CMAKE_PREFIX_PATH` to this project's install directory.
 You will need this include:
 ```c++
 #include <VoxelTraversal/voxel_traversal.h>
