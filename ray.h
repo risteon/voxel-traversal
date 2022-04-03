@@ -4,11 +4,10 @@
 #include <Eigen/Dense>
 
 namespace voxel_traversal {
-// TODO(risteon): make templates
-// template<typename float_type = double>
+
+template<typename float_type = double>
 class Ray {
  public:
-  using float_type = double;
   using Vector3d = Eigen::Matrix<float_type, 3, 1>;
 
   static Ray fromOriginDir(const Vector3d& origin, const Vector3d& dir) {

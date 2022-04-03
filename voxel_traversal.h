@@ -15,22 +15,26 @@ namespace voxel_traversal {
 //     t1 > t0
 //     To encapsulate entire ray traversal, set t0 = 0.0, t1 = 1.0
 //     'grid' encapsulates a valid voxel grid system.
+template <typename float_type>
+using TraversedVoxels =
+    std::vector<typename Grid3DSpatialDef<float_type>::Index3d>;
 
-using float_type = double;
-
-bool traverseVoxelGrid(
-    const Ray& ray, const Grid3DSpatialDef& grid,
-    std::vector<Grid3DSpatialDef::Index3d>& traversed_voxels,
+template <typename float_type = double>
+bool traverseVoxelGrid(const Ray<float_type>& ray,
+                       const Grid3DSpatialDef<float_type>& grid,
+                       TraversedVoxels<float_type>& traversed_voxels,
                        float_type t0 = float_type{0.0},
                        float_type t1 = float_type{1.0}) noexcept;
 
-bool traverseVoxelGrid(
-    const Ray& ray, Grid3DTraversalCounter& grid,
-    float_type t0 = float_type{0.0},
-    float_type t1 = float_type{1.0}) noexcept;
+template <typename float_type = double>
+bool traverseVoxelGrid(const Ray<float_type>& ray,
+                       Grid3DTraversalCounter<float_type>& grid,
+                       float_type t0 = float_type{0.0},
+                       float_type t1 = float_type{1.0}) noexcept;
 
-[[nodiscard]] bool rayBoxIntersection(const Ray& ray,
-                                      const Grid3DSpatialDef& grid,
+template <typename float_type = double>
+[[nodiscard]] bool rayBoxIntersection(const Ray<float_type>& ray,
+                                      const Grid3DSpatialDef<float_type>& grid,
                                       float_type& tMin, float_type& tMax,
                                       float_type t0 = 0.0,
                                       float_type t1 = 1.0) noexcept;

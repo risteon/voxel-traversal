@@ -48,8 +48,5 @@ You will need this include:
 #include <VoxelTraversal/voxel_traversal.h>
 ```
 
-
-
 ## ToDo's
 * More tests
-* Algorithm and structures as templates for single and double precision version.

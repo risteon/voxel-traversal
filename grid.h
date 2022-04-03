@@ -6,12 +6,12 @@
 #include <unsupported/Eigen/CXX11/Tensor>
 
 namespace voxel_traversal {
-// TODO(risteon): make templates for single/double precision
-// template<typename float_type = double>
+
+template <typename float_type = double>
 class Grid3DSpatialDef {
  public:
-  using float_type = double;
   using int_type = int32_t;
+  using float_t = float_type;
 
   using Vector3d = Eigen::Matrix<float_type, 3, 1>;
   using Size3d = Eigen::Array<float_type, 3, 1>;
@@ -46,7 +46,8 @@ class Grid3DSpatialDef {
   [[nodiscard]] const Size3d& gridSize() const { return grid_size_; }
   [[nodiscard]] const Size3d& voxelSize() const { return voxel_size_; }
 
-  friend void swap(Grid3DSpatialDef& first, Grid3DSpatialDef& second) noexcept {
+  friend void swap(Grid3DSpatialDef<float_type>& first,
+                   Grid3DSpatialDef<float_type>& second) noexcept {
     // enable ADL
     using std::swap;
     swap(first.min_bound_, second.min_bound_);
@@ -69,8 +70,13 @@ class Grid3DSpatialDef {
   Size3d voxel_size_;
 };
 
-class Grid3DTraversalCounter : public Grid3DSpatialDef {
+template <typename float_type = double>
+class Grid3DTraversalCounter : public Grid3DSpatialDef<float_type> {
  public:
+  // declarations for independent base class types
+  using typename Grid3DSpatialDef<float_type>::Vector3d;
+  using typename Grid3DSpatialDef<float_type>::Index3d;
+
   using counter_type = uint64_t;
   using tensor_type = Eigen::Tensor<counter_type, 3>;
 
@@ -88,10 +94,10 @@ class Grid3DTraversalCounter : public Grid3DSpatialDef {
 
   Grid3DTraversalCounter(const Vector3d& min_bound, const Vector3d& max_bound,
                          const Index3d& num_voxels)
-      : Grid3DSpatialDef(min_bound, max_bound, num_voxels),
+      : Grid3DSpatialDef<float_type>(min_bound, max_bound, num_voxels),
         counter_(tensor_type(num_voxels[0], num_voxels[1], num_voxels[2])) {
-    assert((num_voxels_ > 0).all());
-    assert((min_bound_.array() < max_bound_.array()).all());
+    assert((this->num_voxels_ > 0).all());
+    assert((this->min_bound_.array() < this->max_bound_.array()).all());
     counter_.setZero();
   }
 
@@ -100,8 +106,8 @@ class Grid3DTraversalCounter : public Grid3DSpatialDef {
   void clear() { counter_.setZero(); }
   void increaseAt(const Index3d& index) { counter_(index)++; }
 
-  friend void swap(Grid3DTraversalCounter& first,
-                   Grid3DTraversalCounter& second) noexcept {
+  friend void swap(Grid3DTraversalCounter<float_type>& first,
+                   Grid3DTraversalCounter<float_type>& second) noexcept {
     using std::swap;
     // TOOD(risteon) good option to call base class swap?
     swap(first.min_bound_, second.min_bound_);

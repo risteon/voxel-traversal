@@ -13,21 +13,23 @@
 using namespace voxel_traversal;
 
 // Small voxel grid 2x2x2
+template <typename float_type>
 class TestOnData : public ::testing::Test {
  protected:
-  using float_type = Grid3DSpatialDef::float_type;
-  using V3 = Grid3DSpatialDef::Vector3d;
-  using C3 = Grid3DSpatialDef::Index3d;
+  using V3 = typename Grid3DSpatialDef<float_type>::Vector3d;
+  using C3 = typename Grid3DSpatialDef<float_type>::Index3d;
+  using R = Ray<float_type>;
+  // parse raw points, saved as float32
   using V3f = Eigen::Vector3f;
-  using TraversedVoxels = std::vector<Grid3DSpatialDef::Index3d>;
 
   void SetUp() override {
     const V3 bound_min(0.0, -25.6, -2.0);
     const V3 bound_max(51.2, 25.6, 4.4);
     const C3 voxel_count(256, 256, 32);
-    //    const C3 voxel_count(512, 512, 64);
-    grid_ = Grid3DSpatialDef(bound_min, bound_max, voxel_count);
-    grid_counter_ = Grid3DTraversalCounter(bound_min, bound_max, voxel_count);
+
+    grid_ = Grid3DSpatialDef<float_type>(bound_min, bound_max, voxel_count);
+    grid_counter_ =
+        Grid3DTraversalCounter<float_type>(bound_min, bound_max, voxel_count);
 
     ReadPoints(points_raw_, "points.bin");
     ReadPoints(origins_raw_, "ray_origins.bin");
@@ -52,31 +54,24 @@ class TestOnData : public ::testing::Test {
 
     origins_.resize(num_frames);
     points_.resize(num_frames);
-    points_double_precision_.resize(num_frames);
-    origins_double_precision_.resize(num_frames);
 
     for (std::size_t i = 0, j = 0; j < origins_.size(); ++j, i += 3) {
-      origins_[j] = V3f(origins_raw_.data() + i);
-      origins_double_precision_[j] = origins_[j].cast<double>();
+      origins_[j] = V3f(origins_raw_.data() + i).cast<float_type>();
     }
     std::size_t batch_count = 0;
     std::size_t current_frame = 0;
     for (const auto frame_count : frame_counts_) {
       auto& pp = points_[current_frame];
-      auto& ppd = points_double_precision_[current_frame];
       pp.resize(frame_count);
-      ppd.resize(frame_count);
       for (std::size_t i = 0, j = 0; j < frame_count; ++j, i += 3) {
-        pp[j] = V3f(points_raw_.data() + batch_count * 3 + i);
-        ppd[j] = pp[j].cast<double>();
+        pp[j] =
+            V3f(points_raw_.data() + batch_count * 3 + i).cast<float_type>();
       }
       batch_count += frame_count;
       ++current_frame;
     }
 
     ASSERT_EQ(points_.size(), origins_.size());
-    ASSERT_EQ(points_double_precision_.size(),
-              origins_double_precision_.size());
   }
 
   template <typename Scalar>
@@ -103,36 +98,35 @@ class TestOnData : public ::testing::Test {
     ASSERT_EQ(into.size(), num_values);
   };
 
-  Grid3DSpatialDef grid_;
-  Grid3DTraversalCounter grid_counter_;
+  Grid3DSpatialDef<float_type> grid_;
+  Grid3DTraversalCounter<float_type> grid_counter_;
 
   std::vector<float> points_raw_;
   std::vector<float> origins_raw_;
   std::vector<int32_t> frame_counts_;
   // multiple frames with their respective origin
-  std::vector<std::vector<V3f>> points_;
-  std::vector<V3f> origins_;
+  std::vector<std::vector<V3>> points_;
+  std::vector<V3> origins_;
   std::size_t total_point_count_;
-  // double precision
-  std::vector<std::vector<V3>> points_double_precision_;
-  std::vector<V3> origins_double_precision_;
 };
 
-TEST_F(TestOnData, timeIntersectionCalculation) {
+using Implementations = ::testing::Types<float, double>;
+TYPED_TEST_SUITE(TestOnData, Implementations);
+
+TYPED_TEST(TestOnData, timeIntersectionCalculation) {
   using std::chrono::duration;
   using std::chrono::duration_cast;
   using std::chrono::high_resolution_clock;
 
-  double t_min, t_max;
+  TypeParam t_min, t_max;
   uint32_t intersection_count{0};
-  TraversedVoxels traversedVoxels{};
+  TraversedVoxels<TypeParam> traversedVoxels{};
   traversedVoxels.reserve(1000);
 
   auto t1 = high_resolution_clock::now();
-  for (std::size_t frame = 0; frame < points_double_precision_.size();
-       ++frame) {
-    const auto& pp = points_double_precision_[frame];
-    const V3& origin = origins_double_precision_[frame];
+  for (std::size_t frame = 0; frame < TestFixture::points_.size(); ++frame) {
+    const auto& pp = TestFixture::points_[frame];
+    const typename TestFixture::V3& origin = TestFixture::origins_[frame];
 
     if (frame % 50 == 0) {
       std::cout << "...processing frame #" << frame << " with #" << pp.size()
@@ -140,8 +134,9 @@ TEST_F(TestOnData, timeIntersectionCalculation) {
     }
 
     for (const auto& point : pp) {
-      const auto ray = Ray::fromOriginEnd(origin, point);
-      const auto intersect = rayBoxIntersection(ray, grid_, t_min, t_max);
+      const auto ray = TestFixture::R::fromOriginEnd(origin, point);
+      const auto intersect =
+          rayBoxIntersection(ray, TestFixture::grid_, t_min, t_max);
       if (intersect) {
         ++intersection_count;
       }
@@ -151,7 +146,8 @@ TEST_F(TestOnData, timeIntersectionCalculation) {
   const duration<double> ss = t2 - t1;
 
   std::cout << "Elapsed seconds: " << ss.count() << std::endl;
-  std::cout << "Total number of rays: " << total_point_count_ << std::endl;
+  std::cout << "Total number of rays: " << TestFixture::total_point_count_
+            << std::endl;
   std::cout << "Total number of intersections: " << intersection_count
             << std::endl;
 
@@ -169,7 +165,7 @@ TEST_F(TestOnData, timeIntersectionCalculation) {
   }
 }
 
-TEST_F(TestOnData, timeTraversalCalculation) {
+TYPED_TEST(TestOnData, timeTraversalCalculation) {
   using std::chrono::duration;
   using std::chrono::duration_cast;
   using std::chrono::high_resolution_clock;
@@ -178,14 +174,13 @@ TEST_F(TestOnData, timeTraversalCalculation) {
   uint32_t intersection_count{0};
   uint64_t traversal_count{0};
 
-  TraversedVoxels traversedVoxels{};
+  TraversedVoxels<TypeParam> traversedVoxels{};
   traversedVoxels.reserve(1000);
 
   auto t1 = high_resolution_clock::now();
-  for (std::size_t frame = 0; frame < points_double_precision_.size();
-       ++frame) {
-    const auto& pp = points_double_precision_[frame];
-    const V3& origin = origins_double_precision_[frame];
+  for (std::size_t frame = 0; frame < TestFixture::points_.size(); ++frame) {
+    const auto& pp = TestFixture::points_[frame];
+    const typename TestFixture::V3& origin = TestFixture::origins_[frame];
 
     if (frame % 50 == 0) {
       std::cout << "...processing frame #" << frame << " with #" << pp.size()
@@ -193,10 +188,11 @@ TEST_F(TestOnData, timeTraversalCalculation) {
     }
 
     for (const auto& point : pp) {
-      const auto ray = Ray::fromOriginEnd(origin, point);
+      const auto ray = TestFixture::R::fromOriginEnd(origin, point);
 
       const auto intersect =
-          traverseVoxelGrid(ray, grid_, traversedVoxels, 0.0, 1.0);
+          traverseVoxelGrid(ray, TestFixture::grid_, traversedVoxels,
+                            TypeParam{0.0}, TypeParam{1.0});
       if (intersect) {
         ++intersection_count;
       }
@@ -207,7 +203,8 @@ TEST_F(TestOnData, timeTraversalCalculation) {
   const duration<double> ss = t2 - t1;
 
   std::cout << "Elapsed seconds: " << ss.count() << std::endl;
-  std::cout << "Total number of rays: " << total_point_count_ << std::endl;
+  std::cout << "Total number of rays: " << TestFixture::total_point_count_
+            << std::endl;
   std::cout << "Total number of intersections: " << intersection_count
             << std::endl;
   // originally: 278 063 540
@@ -215,20 +212,19 @@ TEST_F(TestOnData, timeTraversalCalculation) {
             << std::endl;
 }
 
-TEST_F(TestOnData, timeCounterCalculation) {
+TYPED_TEST(TestOnData, timeCounterCalculation) {
   using std::chrono::duration;
   using std::chrono::duration_cast;
   using std::chrono::high_resolution_clock;
 
   double t_min, t_max;
   uint32_t intersection_count{0};
-  grid_counter_.clear();
+  TestFixture::grid_counter_.clear();
 
   auto t1 = high_resolution_clock::now();
-  for (std::size_t frame = 0; frame < points_double_precision_.size();
-       ++frame) {
-    const auto& pp = points_double_precision_[frame];
-    const V3& origin = origins_double_precision_[frame];
+  for (std::size_t frame = 0; frame < TestFixture::points_.size(); ++frame) {
+    const auto& pp = TestFixture::points_[frame];
+    const typename TestFixture::V3& origin = TestFixture::origins_[frame];
 
     if (frame % 50 == 0) {
       std::cout << "...processing frame #" << frame << " with #" << pp.size()
@@ -236,9 +232,10 @@ TEST_F(TestOnData, timeCounterCalculation) {
     }
 
     for (const auto& point : pp) {
-      const auto ray = Ray::fromOriginEnd(origin, point);
+      const auto ray = TestFixture::R::fromOriginEnd(origin, point);
 
-      const auto intersect = traverseVoxelGrid(ray, grid_counter_, 0.0, 1.0);
+      const auto intersect = traverseVoxelGrid(ray, TestFixture::grid_counter_,
+                                               TypeParam{0.0}, TypeParam{1.0});
       if (intersect) {
         ++intersection_count;
       }
@@ -248,23 +245,24 @@ TEST_F(TestOnData, timeCounterCalculation) {
   const duration<double> ss = t2 - t1;
 
   std::cout << "Elapsed seconds: " << ss.count() << std::endl;
-  std::cout << "Total number of rays: " << total_point_count_ << std::endl;
+  std::cout << "Total number of rays: " << TestFixture::total_point_count_
+            << std::endl;
   std::cout << "Total number of intersections: " << intersection_count
             << std::endl;
   // originally: 278 063 540
-  const Eigen::Tensor<Grid3DTraversalCounter::counter_type, 0> sum_count =
-      grid_counter_.getCounter().sum();
+  const Eigen::Tensor<typename Grid3DTraversalCounter<TypeParam>::counter_type,
+                      0>
+      sum_count = TestFixture::grid_counter_.getCounter().sum();
   std::cout << "Total number of traversed voxels: " << sum_count() << std::endl;
 }
 
-TEST_F(TestOnData, sanityCheckTraversalCalculation) {
-  TraversedVoxels traversedVoxels{};
+TYPED_TEST(TestOnData, sanityCheckTraversalCalculation) {
+  TraversedVoxels<TypeParam> traversedVoxels{};
   traversedVoxels.reserve(1000);
 
-  for (std::size_t frame = 0; frame < points_double_precision_.size();
-       ++frame) {
-    const auto& pp = points_double_precision_[frame];
-    const V3& origin = origins_double_precision_[frame];
+  for (std::size_t frame = 0; frame < TestFixture::points_.size(); ++frame) {
+    const auto& pp = TestFixture::points_[frame];
+    const typename TestFixture::V3& origin = TestFixture::origins_[frame];
 
     if (frame % 50 == 0) {
       std::cout << "...processing frame #" << frame << " with #" << pp.size()
@@ -272,16 +270,17 @@ TEST_F(TestOnData, sanityCheckTraversalCalculation) {
     }
 
     for (const auto& point : pp) {
-      const auto ray = Ray::fromOriginEnd(origin, point);
+      const auto ray = TestFixture::R::fromOriginEnd(origin, point);
 
       const auto intersect =
-          traverseVoxelGrid(ray, grid_, traversedVoxels, 0.0, 1.0);
+          traverseVoxelGrid(ray, TestFixture::grid_, traversedVoxels,
+                            TypeParam{0.0}, TypeParam{1.0});
       for (const auto& tv : traversedVoxels) {
         EXPECT_TRUE((tv >= 0).all());
-        EXPECT_TRUE((tv < grid_.numVoxels()).all());
+        EXPECT_TRUE((tv < TestFixture::grid_.numVoxels()).all());
       }
-      EXPECT_LE(traversedVoxels.size(),
-                grid_.numVoxels().x() + grid_.numVoxels().y());
+      EXPECT_LE(traversedVoxels.size(), TestFixture::grid_.numVoxels().x() +
+                                            TestFixture::grid_.numVoxels().y());
     }
   }
 }
