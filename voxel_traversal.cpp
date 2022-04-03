@@ -113,7 +113,6 @@ bool traverseVoxelGrid(const Ray& ray, Grid3DTraversalCounter& grid,
   Grid3DTraversalCounter::Index3d step_index{};
   Grid3DTraversalCounter::Index3d current_index{};
   Grid3DTraversalCounter::Index3d final_index{};
-  using int_type = Grid3DSpatialDef::int_type;
 
   const auto intersect = setupTraversal(ray, grid, t0, t1, delta, tmax,
                                         step_index, current_index, final_index);
@@ -150,7 +149,6 @@ bool traverseVoxelGrid(const Ray& ray, const Grid3DSpatialDef& grid,
   Grid3DSpatialDef::Index3d step_index{};
   Grid3DSpatialDef::Index3d current_index{};
   Grid3DSpatialDef::Index3d final_index{};
-  using int_type = Grid3DSpatialDef::int_type;
 
   traversed_voxels.clear();
 

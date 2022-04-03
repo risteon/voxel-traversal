@@ -5,6 +5,7 @@
 #include <cstddef>
 #include <unsupported/Eigen/CXX11/Tensor>
 
+namespace voxel_traversal {
 // TODO(risteon): make templates for single/double precision
 // template<typename float_type = double>
 class Grid3DSpatialDef {
@@ -74,7 +75,7 @@ class Grid3DTraversalCounter : public Grid3DSpatialDef {
   using tensor_type = Eigen::Tensor<counter_type, 3>;
 
   Grid3DTraversalCounter() = default;
-  virtual ~Grid3DTraversalCounter() = default;
+  virtual ~Grid3DTraversalCounter() override = default;
 
   Grid3DTraversalCounter& operator=(Grid3DTraversalCounter other) {
     swap(*this, other);
@@ -96,12 +97,8 @@ class Grid3DTraversalCounter : public Grid3DSpatialDef {
 
   [[nodiscard]] const tensor_type& getCounter() const { return counter_; }
 
-  void clear() {
-    counter_.setZero();
-  }
-  void increaseAt(const Index3d& index) {
-    counter_(index)++;
-  }
+  void clear() { counter_.setZero(); }
+  void increaseAt(const Index3d& index) { counter_(index)++; }
 
   friend void swap(Grid3DTraversalCounter& first,
                    Grid3DTraversalCounter& second) noexcept {
@@ -119,4 +116,5 @@ class Grid3DTraversalCounter : public Grid3DSpatialDef {
   tensor_type counter_;
 };
 
+}  // namespace voxel_traversal
 #endif  // VOXEL_TRAVERSAL_GRID_H

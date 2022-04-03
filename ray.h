@@ -3,6 +3,7 @@
 
 #include <Eigen/Dense>
 
+namespace voxel_traversal {
 // TODO(risteon): make templates
 // template<typename float_type = double>
 class Ray {
@@ -38,5 +39,7 @@ class Ray {
   // end - origin
   Vector3d direction_;
 };
+
+}  // namespace voxel_traversal
 
 #endif  // VOXEL_TRAVERSAL_RAY_H
