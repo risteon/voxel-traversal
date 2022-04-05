@@ -279,8 +279,7 @@ TYPED_TEST(TestOnData, sanityCheckTraversalCalculation) {
         EXPECT_TRUE((tv >= 0).all());
         EXPECT_TRUE((tv < TestFixture::grid_.numVoxels()).all());
       }
-      EXPECT_LE(traversedVoxels.size(), TestFixture::grid_.numVoxels().x() +
-                                            TestFixture::grid_.numVoxels().y());
+      EXPECT_LE(traversedVoxels.size(), TestFixture::grid_.upperBoundVoxelTraversal());
     }
   }
 }
