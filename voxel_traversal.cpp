@@ -61,6 +61,38 @@ bool setupTraversal(const Ray<typename Grid::float_t>& ray, const Grid& grid,
 
   return true;
 }
+
+template <typename float_type>
+bool traverseSingle(
+    typename Grid3DSpatialDef<float_type>::Size3d& tmax,
+    typename Grid3DSpatialDef<float_type>::Index3d& current_index,
+    const typename Grid3DSpatialDef<float_type>::Index3d& overflow_index,
+    const typename Grid3DSpatialDef<float_type>::Index3d& step_index,
+    const typename Grid3DSpatialDef<float_type>::Size3d& delta) {
+  if (tmax.x() < tmax.y() && tmax.x() < tmax.z()) {
+    // X-axis traversal.
+    current_index.x() += step_index.x();
+    tmax.x() += delta.x();
+    if (current_index.x() == overflow_index.x()) {
+      return false;
+    }
+  } else if (tmax.y() < tmax.z()) {
+    // Y-axis traversal.
+    current_index.y() += step_index.y();
+    tmax.y() += delta.y();
+    if (current_index.y() == overflow_index.y()) {
+      return false;
+    }
+  } else {
+    // Z-axis traversal.
+    current_index.z() += step_index.z();
+    tmax.z() += delta.z();
+    if (current_index.z() == overflow_index.z()) {
+      return false;
+    }
+  }
+  return true;
+}
 }  // namespace detail
 
 // Uses the improved version of Smit's algorithm to determine if the given ray
@@ -129,23 +161,17 @@ bool traverseVoxelGrid(const Ray<float_type>& ray,
 
   grid.increaseAt(current_index);
 
-  while ((current_index != final_index).any()) {
-    if (tmax.x() < tmax.y() && tmax.x() < tmax.z()) {
-      // X-axis traversal.
-      current_index.x() += step_index.x();
-      tmax.x() += delta.x();
-    } else if (tmax.y() < tmax.z()) {
-      // Y-axis traversal.
-      current_index.y() += step_index.y();
-      tmax.y() += delta.y();
-    } else {
-      // Z-axis traversal.
-      current_index.z() += step_index.z();
-      tmax.z() += delta.z();
+  // one too far in every direction. Stop as soon as we hit any of these "walls"
+  // It can happen, that the final_index is not exacty hit (float errors)
+  const typename grid_type::Index3d overflow_index = final_index + step_index;
+
+  while (true) {
+    if (!detail::traverseSingle<float_type>(tmax, current_index, overflow_index,
+                                            step_index, delta)) {
+      break;
     }
     grid.increaseAt(current_index);
   }
-
   return true;
 }
 
@@ -169,21 +195,15 @@ bool traverseVoxelGrid(const Ray<float_type>& ray,
 
   traversed_voxels.push_back(current_index);
 
-  while ((current_index != final_index).any()) {
-    if (tmax.x() < tmax.y() && tmax.x() < tmax.z()) {
-      // X-axis traversal.
-      current_index.x() += step_index.x();
-      tmax.x() += delta.x();
-    } else if (tmax.y() < tmax.z()) {
-      // Y-axis traversal.
-      current_index.y() += step_index.y();
-      tmax.y() += delta.y();
-    } else {
-      // Z-axis traversal.
-      current_index.z() += step_index.z();
-      tmax.z() += delta.z();
-    }
+  // one too far in every direction. Stop as soon as we hit any of these "walls"
+  // It can happen, that the final_index is not exacty hit (float errors)
+  const typename grid_type::Index3d overflow_index = final_index + step_index;
 
+  while (true) {
+    if (!detail::traverseSingle<float_type>(tmax, current_index, overflow_index,
+                                            step_index, delta)) {
+      break;
+    }
     traversed_voxels.push_back(current_index);
   }
 
@@ -198,10 +218,9 @@ template bool traverseVoxelGrid<double>(const Ray<double>&,
                                         const Grid3DSpatialDef<double>&,
                                         TraversedVoxels<double>&, double,
                                         double);
-template bool traverseVoxelGrid<long double>(const Ray<long double>&,
-                                        const Grid3DSpatialDef<long double>&,
-                                        TraversedVoxels<long double>&, long double,
-                                        long double);
+template bool traverseVoxelGrid<long double>(
+    const Ray<long double>&, const Grid3DSpatialDef<long double>&,
+    TraversedVoxels<long double>&, long double, long double);
 
 template bool traverseVoxelGrid<float>(const Ray<float>&,
                                        Grid3DTraversalCounter<float>&, float t0,
@@ -209,8 +228,8 @@ template bool traverseVoxelGrid<float>(const Ray<float>&,
 template bool traverseVoxelGrid<double>(const Ray<double>&,
                                         Grid3DTraversalCounter<double>&,
                                         double t0, double t1);
-template bool traverseVoxelGrid<long double>(const Ray<long double>&,
-                                        Grid3DTraversalCounter<long double>&,
-                                        long double t0, long double t1);
+template bool traverseVoxelGrid<long double>(
+    const Ray<long double>&, Grid3DTraversalCounter<long double>&,
+    long double t0, long double t1);
 
 }  // namespace voxel_traversal
