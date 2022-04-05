@@ -18,16 +18,6 @@ class Grid3DSpatialDef {
   using Index3d = Eigen::Array<int_type, 3, 1>;
 
   Grid3DSpatialDef() = default;
-  virtual ~Grid3DSpatialDef() = default;
-
-  Grid3DSpatialDef& operator=(Grid3DSpatialDef other) {
-    swap(*this, other);
-    return *this;
-  }
-  Grid3DSpatialDef(Grid3DSpatialDef&& other) noexcept : Grid3DSpatialDef() {
-    swap(*this, other);
-  }
-
   Grid3DSpatialDef(const Vector3d& min_bound, const Vector3d& max_bound,
                    const Index3d& num_voxels)
       : min_bound_{min_bound},
@@ -38,6 +28,16 @@ class Grid3DSpatialDef {
     assert((num_voxels_ > 0).all());
     assert((min_bound_.array() < max_bound_.array()).all());
   }
+  virtual ~Grid3DSpatialDef() = default;
+
+  Grid3DSpatialDef(Grid3DSpatialDef& other) = default;
+  Grid3DSpatialDef(Grid3DSpatialDef&& other) noexcept : Grid3DSpatialDef() {
+    swap(*this, other);
+  }
+  Grid3DSpatialDef& operator=(Grid3DSpatialDef other) noexcept {
+    swap(*this, other);
+    return *this;
+  }
 
   [[nodiscard]] const Index3d& numVoxels() const { return num_voxels_; }
 
@@ -45,6 +45,10 @@ class Grid3DSpatialDef {
   [[nodiscard]] const Vector3d& maxBound() const { return max_bound_; }
   [[nodiscard]] const Size3d& gridSize() const { return grid_size_; }
   [[nodiscard]] const Size3d& voxelSize() const { return voxel_size_; }
+  //! Maximum number of voxels that can be traversed by a single ray
+  [[nodiscard]] int_type upperBoundVoxelTraversal() const {
+    return num_voxels_.sum();
+  }
 
   friend void swap(Grid3DSpatialDef<float_type>& first,
                    Grid3DSpatialDef<float_type>& second) noexcept {
