@@ -175,7 +175,7 @@ TYPED_TEST(TestOnData, timeTraversalCalculation) {
   uint64_t traversal_count{0};
 
   TraversedVoxels<TypeParam> traversedVoxels{};
-  traversedVoxels.reserve(1000);
+  traversedVoxels.reserve(TestFixture::grid_.upperBoundVoxelTraversal());
 
   auto t1 = high_resolution_clock::now();
   for (std::size_t frame = 0; frame < TestFixture::points_.size(); ++frame) {

@@ -85,11 +85,29 @@ class TestVoxel4x2x1Counter : public TestVoxelCounter<float_type> {
   }
 };
 
+// real-world edge cases
+template <typename float_type>
+class TestVoxelGridCounter : public TestVoxelCounter<float_type> {
+ protected:
+  using V3 = typename Grid3DTraversalCounter<float_type>::Vector3d;
+  using C3 = typename Grid3DTraversalCounter<float_type>::Index3d;
+  using R = Ray<float_type>;
+
+  void SetUp() override {
+    const V3 bound_min(0.0, -25.6, -2.0);
+    const V3 bound_max(51.2, 25.6, 4.4);
+    const C3 voxel_count(256, 256, 32);
+    this->grid_ =
+        Grid3DTraversalCounter<float_type>(bound_min, bound_max, voxel_count);
+  }
+};
+
 // setup typed test suites
 using Implementations = ::testing::Types<float, double>;
 TYPED_TEST_SUITE(TestVoxel2x2x2Counter, Implementations);
 TYPED_TEST_SUITE(TestVoxel5x5x5Counter, Implementations);
 TYPED_TEST_SUITE(TestVoxel4x2x1Counter, Implementations);
+TYPED_TEST_SUITE(TestVoxelGridCounter, Implementations);
 
 TYPED_TEST(TestVoxel2x2x2Counter, MultipleRays) {
   TestFixture::grid_.clear();
@@ -332,5 +350,39 @@ TYPED_TEST(TestVoxel4x2x1Counter, StoppingStartingRay) {
                                              TypeParam{0.0}, TypeParam{15.0});
     EXPECT_TRUE(intersect);
     TestFixture::expectCounted(expected);
+  }
+}
+
+TYPED_TEST(TestVoxelGridCounter, EdgeCase) {
+  {
+    // from actual nuscenes data. Originally caused segfault.
+    // C
+    // byte representations of ray origin and end should be:
+    // origin:
+    // X = 1.371252775    ^= 0x36 85 af 3f
+    // Y = 0.005534927361 ^= 0x56 5e b5 3b
+    // Z = -0.02380313911 ^= 0xcd fe c2 bc
+    // end:
+    // X = 20.40990257f   ^= 0x7b 47 a3 41
+    // Y = -32.43192673f  ^= 0x4b ba 01 c2
+    // Z = -0.791713357f  ^= 0xba ad 4a bf
+
+    TestFixture::grid_.clear();
+
+    const auto ray = TestFixture::R::fromOriginEnd(
+        {1.371252775f, 0.005534927361f, -0.02380313911f},
+        {20.40990257f, -32.43192673f, -0.791713357f});
+    TraversedVoxels<TypeParam> expected{
+        {1, 0, 0}, {2, 0, 0}, {2, 1, 0}, {3, 1, 0}};
+
+    // count traversed voxels implementation
+    const auto intersect = traverseVoxelGrid(ray, TestFixture::grid_,
+                                             TypeParam{0.0}, TypeParam{1.0});
+    // different code path for returning traversed voxels instead of counting
+    TraversedVoxels<TypeParam> traversedVoxels{};
+    const auto ii = traverseVoxelGrid(
+        ray, static_cast<Grid3DSpatialDef<TypeParam>>(TestFixture::grid_),
+        traversedVoxels, TypeParam{0.0}, TypeParam{1.0});
+    EXPECT_TRUE(intersect);
   }
 }
