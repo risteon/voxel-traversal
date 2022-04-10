@@ -27,17 +27,11 @@ bool setupTraversal(const Ray<typename Grid::float_t>& ray, const Grid& grid,
   const auto ray_end = ray.at(tMax);
 
   // get voxel index of start and end within grid
-  const auto voxelIndexStartUnlimited =
-      ((ray_start - grid.minBound()).array() / grid.voxelSize().array())
-          .floor()
-          .template cast<int_type>();
+  const auto voxelIndexStartUnlimited = grid.getIndex(ray_start);
   current_index =
       voxelIndexStartUnlimited.cwiseMax(0).cwiseMin(grid.numVoxels() - 1);
 
-  const auto voxelIndexEndUnlimited =
-      ((ray_end - grid.minBound()).array() / grid.voxelSize().array())
-          .floor()
-          .template cast<int_type>();
+  const auto voxelIndexEndUnlimited = grid.getIndex(ray_end);
   final_index =
       voxelIndexEndUnlimited.cwiseMax(0).cwiseMin(grid.numVoxels() - 1);
 

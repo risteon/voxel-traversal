@@ -36,6 +36,7 @@ class Grid3DSpatialDef {
   Grid3DSpatialDef(Grid3DSpatialDef&& other) noexcept : Grid3DSpatialDef() {
     swap(*this, other);
   }
+  //! Copy-and-swap. Handles both lvalues and rvalues
   Grid3DSpatialDef& operator=(Grid3DSpatialDef other) noexcept {
     swap(*this, other);
     return *this;
@@ -55,6 +56,14 @@ class Grid3DSpatialDef {
     return num_voxels_.sum();
   }
 
+  //! Get voxel index of given position
+  Index3d getIndex(const Vector3d& v) const noexcept {
+    return ((v - min_bound_).array() / voxel_size_)
+        .floor()
+        .template cast<int_type>();
+  }
+
+  //! For copy-and-swap
   friend void swap(Grid3DSpatialDef<float_type>& first,
                    Grid3DSpatialDef<float_type>& second) noexcept {
     // enable ADL
