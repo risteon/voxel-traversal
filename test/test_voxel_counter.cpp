@@ -103,7 +103,7 @@ class TestVoxelGridCounter : public TestVoxelCounter<float_type> {
 };
 
 // setup typed test suites
-using Implementations = ::testing::Types<float, double>;
+using Implementations = ::testing::Types<float, double, long double>;
 TYPED_TEST_SUITE(TestVoxel2x2x2Counter, Implementations);
 TYPED_TEST_SUITE(TestVoxel5x5x5Counter, Implementations);
 TYPED_TEST_SUITE(TestVoxel4x2x1Counter, Implementations);

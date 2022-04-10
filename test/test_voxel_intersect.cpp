@@ -27,7 +27,7 @@ class Epsilon<double> {
 template <>
 class Epsilon<long double> {
  public:
-  static constexpr double eps = 1e-15;
+  static constexpr double eps = 2e-14;
 };
 
 // Small voxel grid 2x2x2
@@ -52,7 +52,7 @@ class TestVoxel2x2x2Intersect : public ::testing::Test {
   Grid3DSpatialDef<float_type> grid_;
 };
 
-using Implementations = ::testing::Types<float, double>;
+using Implementations = ::testing::Types<float, double, long double>;
 TYPED_TEST_SUITE(TestVoxel2x2x2Intersect, Implementations);
 
 TYPED_TEST(TestVoxel2x2x2Intersect, XYPlaneFixedT) {
@@ -183,8 +183,8 @@ TYPED_TEST(TestVoxel2x2x2Intersect, RayOutsideXYPlane) {
     const auto intersect =
         rayBoxIntersection(ray, TestFixture::grid_, t_min, t_max);
     EXPECT_TRUE(intersect);
-    EXPECT_GE(t_min, 0.1);
-    EXPECT_FLOAT_EQ(1.0, t_max);
+    EXPECT_GE(t_min, TypeParam{0.1});
+    EXPECT_NEAR(t_max, TypeParam{1.0}, Epsilon<TypeParam>::eps);
   }
   {
     // outside of grid
@@ -194,8 +194,8 @@ TYPED_TEST(TestVoxel2x2x2Intersect, RayOutsideXYPlane) {
         rayBoxIntersection(ray, TestFixture::grid_, t_min, t_max);
     EXPECT_FALSE(intersect);
 
-    EXPECT_NEAR(t_min, -21.0, Epsilon<TypeParam>::eps);
-    EXPECT_NEAR(t_max, -1.0, Epsilon<TypeParam>::eps);
+    EXPECT_NEAR(t_min, TypeParam{-21.0}, Epsilon<TypeParam>::eps);
+    EXPECT_NEAR(t_max, TypeParam{-1.0}, Epsilon<TypeParam>::eps);
   }
 }
 

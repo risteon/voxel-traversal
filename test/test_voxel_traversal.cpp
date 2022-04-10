@@ -103,7 +103,7 @@ class TestVoxel4x2x1Traversal : public TestVoxelTraversal<float_type> {
 };
 
 // setup typed test suites
-using Implementations = ::testing::Types<float, double>;
+using Implementations = ::testing::Types<float, double, long double>;
 TYPED_TEST_SUITE(TestVoxel2x2x2Traversal, Implementations);
 TYPED_TEST_SUITE(TestVoxel5x5x5Traversal, Implementations);
 TYPED_TEST_SUITE(TestVoxel4x2x1Traversal, Implementations);
