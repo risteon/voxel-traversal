@@ -10,6 +10,7 @@ namespace voxel_traversal {
 template <typename float_type = double>
 class Grid3DSpatialDef {
  public:
+  // need to express negative voxel indices when calculating voxel traversal
   using int_type = int32_t;
   using float_t = float_type;
 
@@ -24,7 +25,8 @@ class Grid3DSpatialDef {
         max_bound_{max_bound},
         grid_size_{max_bound - min_bound},
         num_voxels_{num_voxels},
-        voxel_size_{grid_size_ / num_voxels.cast<float_type>()} {
+        voxel_size_{grid_size_ / num_voxels.cast<float_type>()},
+        voxel_count_{static_cast<decltype(voxel_count_)>(num_voxels.prod())} {
     assert((num_voxels_ > 0).all());
     assert((min_bound_.array() < max_bound_.array()).all());
   }
@@ -45,6 +47,9 @@ class Grid3DSpatialDef {
   [[nodiscard]] const Vector3d& maxBound() const { return max_bound_; }
   [[nodiscard]] const Size3d& gridSize() const { return grid_size_; }
   [[nodiscard]] const Size3d& voxelSize() const { return voxel_size_; }
+  //! Total number of voxels in this grid
+  [[nodiscard]] uint64_t voxelCount() const noexcept { return voxel_count_; }
+
   //! Maximum number of voxels that can be traversed by a single ray
   [[nodiscard]] int_type upperBoundVoxelTraversal() const {
     return num_voxels_.sum();
@@ -59,6 +64,7 @@ class Grid3DSpatialDef {
     swap(first.grid_size_, second.grid_size_);
     swap(first.num_voxels_, second.num_voxels_);
     swap(first.voxel_size_, second.voxel_size_);
+    swap(first.voxel_count_, second.voxel_count_);
   }
 
  protected:
@@ -72,6 +78,8 @@ class Grid3DSpatialDef {
   Index3d num_voxels_;
   // The size of the voxel's x dimension.
   Size3d voxel_size_;
+  // Number of voxels in this grid
+  uint64_t voxel_count_;
 };
 
 template <typename float_type = double>
@@ -119,6 +127,7 @@ class Grid3DTraversalCounter : public Grid3DSpatialDef<float_type> {
     swap(first.grid_size_, second.grid_size_);
     swap(first.num_voxels_, second.num_voxels_);
     swap(first.voxel_size_, second.voxel_size_);
+    swap(first.voxel_count_, second.voxel_count_);
     swap(first.counter_, second.counter_);
   }
 

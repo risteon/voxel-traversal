@@ -104,6 +104,18 @@ TYPED_TEST_SUITE(TestVoxel2x2x2Traversal, Implementations);
 TYPED_TEST_SUITE(TestVoxel5x5x5Traversal, Implementations);
 TYPED_TEST_SUITE(TestVoxel4x2x1Traversal, Implementations);
 
+TYPED_TEST(TestVoxel2x2x2Traversal, GridProperties) {
+  EXPECT_EQ(8ul, TestFixture::grid_.voxelCount());
+  const Grid3DSpatialDef<TypeParam> grid_copy = TestFixture::grid_;
+  EXPECT_EQ(8ul, grid_copy.voxelCount());
+  EXPECT_TRUE((TestFixture::grid_.gridSize() == grid_copy.gridSize()).all());
+  EXPECT_TRUE((TestFixture::grid_.voxelSize() == grid_copy.voxelSize()).all());
+  EXPECT_TRUE((TestFixture::grid_.numVoxels() == grid_copy.numVoxels()).all());
+  EXPECT_EQ(TestFixture::grid_.minBound(), grid_copy.minBound());
+  EXPECT_EQ(TestFixture::grid_.maxBound(), grid_copy.maxBound());
+  EXPECT_TRUE((TestFixture::grid_.gridSize() == grid_copy.gridSize()).all());
+}
+
 TYPED_TEST(TestVoxel2x2x2Traversal, AllDirectionsWithinGrid) {
   {
     // should traverse two voxels in X dir. Ray completely within grid
@@ -213,6 +225,18 @@ TYPED_TEST(TestVoxel2x2x2Traversal, NoVoxel) {
   }
 }
 
+TYPED_TEST(TestVoxel5x5x5Traversal, GridProperties) {
+  EXPECT_EQ(125ul, TestFixture::grid_.voxelCount());
+  const Grid3DSpatialDef<TypeParam> grid_copy = TestFixture::grid_;
+  EXPECT_EQ(125ul, grid_copy.voxelCount());
+  EXPECT_TRUE((TestFixture::grid_.gridSize() == grid_copy.gridSize()).all());
+  EXPECT_TRUE((TestFixture::grid_.voxelSize() == grid_copy.voxelSize()).all());
+  EXPECT_TRUE((TestFixture::grid_.numVoxels() == grid_copy.numVoxels()).all());
+  EXPECT_EQ(TestFixture::grid_.minBound(), grid_copy.minBound());
+  EXPECT_EQ(TestFixture::grid_.maxBound(), grid_copy.maxBound());
+  EXPECT_TRUE((TestFixture::grid_.gridSize() == grid_copy.gridSize()).all());
+}
+
 TYPED_TEST(TestVoxel5x5x5Traversal, Diagonal) {
   TypeParam t_min, t_max;
   {
@@ -234,6 +258,18 @@ TYPED_TEST(TestVoxel5x5x5Traversal, Diagonal) {
     EXPECT_TRUE((this->traversed_voxels_.front() == expected.front()).all());
     EXPECT_TRUE((this->traversed_voxels_.back() == expected.back()).all());
   }
+}
+
+TYPED_TEST(TestVoxel4x2x1Traversal, GridProperties) {
+  EXPECT_EQ(8ul, TestFixture::grid_.voxelCount());
+  const Grid3DSpatialDef<TypeParam> grid_copy = TestFixture::grid_;
+  EXPECT_EQ(8ul, grid_copy.voxelCount());
+  EXPECT_TRUE((TestFixture::grid_.gridSize() == grid_copy.gridSize()).all());
+  EXPECT_TRUE((TestFixture::grid_.voxelSize() == grid_copy.voxelSize()).all());
+  EXPECT_TRUE((TestFixture::grid_.numVoxels() == grid_copy.numVoxels()).all());
+  EXPECT_EQ(TestFixture::grid_.minBound(), grid_copy.minBound());
+  EXPECT_EQ(TestFixture::grid_.maxBound(), grid_copy.maxBound());
+  EXPECT_TRUE((TestFixture::grid_.gridSize() == grid_copy.gridSize()).all());
 }
 
 TYPED_TEST(TestVoxel4x2x1Traversal, StoppingStartingRay) {
