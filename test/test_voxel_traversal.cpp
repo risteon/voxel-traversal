@@ -22,6 +22,10 @@ class TestVoxelTraversal : public ::testing::Test {
     EXPECT_TRUE(std::equal(
         expected.cbegin(), expected.cend(), actual.cbegin(),
         [](const auto& a, const auto& b) { return (a == b).all(); }));
+    // check if all expected voxels are actually considered to be within grid
+    EXPECT_TRUE(
+        std::all_of(expected.cbegin(), expected.cend(),
+                    [this](const auto& index) { return grid_.isWithinGrid(index); }));
   }
   void expectTraversedInOrderWithGaps(
       const TraversedVoxels<float_type>& expected,
@@ -120,6 +124,8 @@ TYPED_TEST(TestVoxel2x2x2Traversal, AllDirectionsWithinGrid) {
   {
     // should traverse two voxels in X dir. Ray completely within grid
     const auto ray = TestFixture::R::fromOriginDir({.5, .5, .5}, {1., 0., 0.});
+    EXPECT_TRUE(TestFixture::grid_.isWithinGrid(ray.origin()));
+    EXPECT_TRUE(TestFixture::grid_.isWithinGrid(ray.endPoint()));
     TraversedVoxels<TypeParam> expected{{0, 0, 0}, {1, 0, 0}};
     const auto intersect = traverseVoxelGrid(ray, TestFixture::grid_,
                                              TestFixture::traversed_voxels_);
@@ -129,6 +135,8 @@ TYPED_TEST(TestVoxel2x2x2Traversal, AllDirectionsWithinGrid) {
   {
     // should traverse two voxels in Y dir. Ray completely within grid
     const auto ray = TestFixture::R::fromOriginDir({1.5, .5, .5}, {0., 1., 0.});
+    EXPECT_TRUE(TestFixture::grid_.isWithinGrid(ray.origin()));
+    EXPECT_TRUE(TestFixture::grid_.isWithinGrid(ray.endPoint()));
     TraversedVoxels<TypeParam> expected{{1, 0, 0}, {1, 1, 0}};
     const auto intersect = traverseVoxelGrid(ray, TestFixture::grid_,
                                              TestFixture::traversed_voxels_);
@@ -138,6 +146,8 @@ TYPED_TEST(TestVoxel2x2x2Traversal, AllDirectionsWithinGrid) {
   {
     // should traverse two voxels in Z dir. Ray completely within grid
     const auto ray = TestFixture::R::fromOriginDir({1.5, .5, .5}, {0., 0., 1.});
+    EXPECT_TRUE(TestFixture::grid_.isWithinGrid(ray.origin()));
+    EXPECT_TRUE(TestFixture::grid_.isWithinGrid(ray.endPoint()));
     TraversedVoxels<TypeParam> expected{{1, 0, 0}, {1, 0, 1}};
     const auto intersect = traverseVoxelGrid(ray, TestFixture::grid_,
                                              TestFixture::traversed_voxels_);
@@ -149,6 +159,8 @@ TYPED_TEST(TestVoxel2x2x2Traversal, AllDirectionsWithinGrid) {
     // should traverse two voxels in X dir. Ray completely within grid
     const auto ray =
         TestFixture::R::fromOriginDir({1.5, .5, .5}, {-1., 0., 0.});
+    EXPECT_TRUE(TestFixture::grid_.isWithinGrid(ray.origin()));
+    EXPECT_TRUE(TestFixture::grid_.isWithinGrid(ray.endPoint()));
     TraversedVoxels<TypeParam> expected{{1, 0, 0}, {0, 0, 0}};
     const auto intersect = traverseVoxelGrid(ray, TestFixture::grid_,
                                              TestFixture::traversed_voxels_);
@@ -159,6 +171,8 @@ TYPED_TEST(TestVoxel2x2x2Traversal, AllDirectionsWithinGrid) {
     // should traverse two voxels in Y dir. Ray completely within grid
     const auto ray =
         TestFixture::R::fromOriginDir({1.5, 1.5, .5}, {0., -1., 0.});
+    EXPECT_TRUE(TestFixture::grid_.isWithinGrid(ray.origin()));
+    EXPECT_TRUE(TestFixture::grid_.isWithinGrid(ray.endPoint()));
     TraversedVoxels<TypeParam> expected{{1, 1, 0}, {1, 0, 0}};
     const auto intersect = traverseVoxelGrid(ray, TestFixture::grid_,
                                              TestFixture::traversed_voxels_);
@@ -169,6 +183,8 @@ TYPED_TEST(TestVoxel2x2x2Traversal, AllDirectionsWithinGrid) {
     // should traverse two voxels in Z dir. Ray completely within grid
     const auto ray =
         TestFixture::R::fromOriginDir({1.5, .5, 1.5}, {0., 0., -1.});
+    EXPECT_TRUE(TestFixture::grid_.isWithinGrid(ray.origin()));
+    EXPECT_TRUE(TestFixture::grid_.isWithinGrid(ray.endPoint()));
     TraversedVoxels<TypeParam> expected{{1, 0, 1}, {1, 0, 0}};
     const auto intersect = traverseVoxelGrid(ray, TestFixture::grid_,
                                              TestFixture::traversed_voxels_);
@@ -182,6 +198,8 @@ TYPED_TEST(TestVoxel2x2x2Traversal, SingleVoxel) {
     // only single voxel, ray too short to reach second
     const auto ray =
         TestFixture::R::fromOriginDir({1.5, 1.5, 1.5}, {0.4, 0., 0.});
+    EXPECT_TRUE(TestFixture::grid_.isWithinGrid(ray.origin()));
+    EXPECT_TRUE(TestFixture::grid_.isWithinGrid(ray.endPoint()));
     TraversedVoxels<TypeParam> expected{{1, 1, 1}};
     const auto intersect = traverseVoxelGrid(ray, TestFixture::grid_,
                                              TestFixture::traversed_voxels_);
@@ -193,6 +211,8 @@ TYPED_TEST(TestVoxel2x2x2Traversal, SingleVoxel) {
     // -> make sure that there is no infinite loop
     const auto ray =
         TestFixture::R::fromOriginEnd({-0.45, 0.5, 1.5}, {0.55, -0.5, 1.5});
+    EXPECT_FALSE(TestFixture::grid_.isWithinGrid(ray.origin()));
+    EXPECT_FALSE(TestFixture::grid_.isWithinGrid(ray.endPoint()));
     TraversedVoxels<TypeParam> expected{{0, 0, 1}};
     const auto intersect = traverseVoxelGrid(ray, TestFixture::grid_,
                                              TestFixture::traversed_voxels_);
@@ -204,6 +224,8 @@ TYPED_TEST(TestVoxel2x2x2Traversal, SingleVoxel) {
     // -> make sure that there is no infinite loop
     const auto ray =
         TestFixture::R::fromOriginEnd({-0.5, 1.5, 0.55}, {0.5, 1.5, -0.45});
+    EXPECT_FALSE(TestFixture::grid_.isWithinGrid(ray.origin()));
+    EXPECT_FALSE(TestFixture::grid_.isWithinGrid(ray.endPoint()));
     TraversedVoxels<TypeParam> expected{{0, 1, 0}};
     const auto intersect = traverseVoxelGrid(ray, TestFixture::grid_,
                                              TestFixture::traversed_voxels_);
@@ -214,9 +236,11 @@ TYPED_TEST(TestVoxel2x2x2Traversal, SingleVoxel) {
 
 TYPED_TEST(TestVoxel2x2x2Traversal, NoVoxel) {
   {
-    // only single voxel, ray too short to reach second
+    // only single voxel, ray parallel and outside of grid
     const auto ray =
         TestFixture::R::fromOriginDir({1.5, 1.5, 2.1}, {0., 1., 0.});
+    EXPECT_FALSE(TestFixture::grid_.isWithinGrid(ray.origin()));
+    EXPECT_FALSE(TestFixture::grid_.isWithinGrid(ray.endPoint()));
     TraversedVoxels<TypeParam> expected{};
     const auto intersect = traverseVoxelGrid(ray, TestFixture::grid_,
                                              TestFixture::traversed_voxels_);
@@ -243,6 +267,8 @@ TYPED_TEST(TestVoxel5x5x5Traversal, Diagonal) {
     // full diagonal. We do not assert specific order of off-diagonal voxels
     const auto ray = TestFixture::R::fromOriginDir({-20.0, -20.0, -20.0},
                                                    {40.0, 40.0, 40.0});
+    EXPECT_FALSE(TestFixture::grid_.isWithinGrid(ray.origin()));
+    EXPECT_FALSE(TestFixture::grid_.isWithinGrid(ray.endPoint()));
     TraversedVoxels<TypeParam> expected{
         {0, 0, 0}, {1, 1, 1}, {2, 2, 2}, {3, 3, 3}, {4, 4, 4}};
     //
@@ -276,6 +302,8 @@ TYPED_TEST(TestVoxel4x2x1Traversal, StoppingStartingRay) {
   {
     const auto ray =
         TestFixture::R::fromOriginEnd({1.5, 0.8, -25.0}, {6.0, 1.7, -25.0});
+    EXPECT_TRUE(TestFixture::grid_.isWithinGrid(ray.origin()));
+    EXPECT_FALSE(TestFixture::grid_.isWithinGrid(ray.endPoint()));
     TraversedVoxels<TypeParam> expected{
         {1, 0, 0}, {2, 0, 0}, {2, 1, 0}, {3, 1, 0}};
     const auto intersect = traverseVoxelGrid(ray, TestFixture::grid_,
@@ -288,6 +316,8 @@ TYPED_TEST(TestVoxel4x2x1Traversal, StoppingStartingRay) {
     // other way around
     const auto ray =
         TestFixture::R::fromOriginEnd({6.0, 1.7, -25.0}, {1.5, 0.8, -25.0});
+    EXPECT_FALSE(TestFixture::grid_.isWithinGrid(ray.origin()));
+    EXPECT_TRUE(TestFixture::grid_.isWithinGrid(ray.endPoint()));
     TraversedVoxels<TypeParam> expected{
         {3, 1, 0}, {2, 1, 0}, {2, 0, 0}, {1, 0, 0}};
     const auto intersect = traverseVoxelGrid(ray, TestFixture::grid_,
@@ -311,6 +341,8 @@ TYPED_TEST(TestVoxel4x2x1Traversal, StoppingStartingRay) {
     // shorter ray, use t1
     const auto ray =
         TestFixture::R::fromOriginEnd({1.5, 0.8, -25.0}, {2.5, 1.0, -25.0});
+    EXPECT_TRUE(TestFixture::grid_.isWithinGrid(ray.origin()));
+    EXPECT_TRUE(TestFixture::grid_.isWithinGrid(ray.endPoint()));
     TraversedVoxels<TypeParam> expected{{1, 0, 0}, {2, 0, 0}};
     const auto intersect = traverseVoxelGrid(ray, TestFixture::grid_,
                                              TestFixture::traversed_voxels_,

@@ -372,6 +372,9 @@ TYPED_TEST(TestVoxelGridCounter, EdgeCase) {
     const auto ray = TestFixture::R::fromOriginEnd(
         {1.371252775f, 0.005534927361f, -0.02380313911f},
         {20.40990257f, -32.43192673f, -0.791713357f});
+    EXPECT_TRUE(TestFixture::grid_.isWithinGrid(ray.origin()));
+    EXPECT_FALSE(TestFixture::grid_.isWithinGrid(ray.endPoint()));
+
     TraversedVoxels<TypeParam> expected{
         {1, 0, 0}, {2, 0, 0}, {2, 1, 0}, {3, 1, 0}};
 

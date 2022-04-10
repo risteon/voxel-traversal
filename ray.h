@@ -23,8 +23,9 @@ class Ray {
     return (origin_ * (float_type{1.0} - t)) + (end_point_ * t);
   }
 
-  [[nodiscard]] const Vector3d& origin() const { return origin_; }
-  [[nodiscard]] const Vector3d& direction() const { return direction_; }
+  [[nodiscard]] const Vector3d& origin() const noexcept { return origin_; }
+  [[nodiscard]] const Vector3d& endPoint() const noexcept { return end_point_; }
+  [[nodiscard]] const Vector3d& direction() const noexcept { return direction_; }
 
  private:
   explicit Ray(Vector3d origin, Vector3d end_point, Vector3d direction)

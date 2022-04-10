@@ -57,10 +57,21 @@ class Grid3DSpatialDef {
   }
 
   //! Get voxel index of given position
-  Index3d getIndex(const Vector3d& v) const noexcept {
+  [[nodiscard]] Index3d getIndex(const Vector3d& v) const noexcept {
     return ((v - min_bound_).array() / voxel_size_)
         .floor()
         .template cast<int_type>();
+  }
+
+  //! Check if given index falls into the voxel grid
+  [[nodiscard]] bool isWithinGrid(const Index3d& index) const noexcept {
+    return (index >= 0).all() && (index < num_voxels_).all();
+  }
+
+  //! Check if given points falls into the voxel grid
+  [[nodiscard]] bool isWithinGrid(const Vector3d& v) const noexcept {
+    return (v.array() >= min_bound_.array()).all() &&
+           (v.array() <= max_bound_.array()).all();
   }
 
   //! For copy-and-swap
