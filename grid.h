@@ -32,7 +32,7 @@ class Grid3DSpatialDef {
   }
   virtual ~Grid3DSpatialDef() = default;
 
-  Grid3DSpatialDef(Grid3DSpatialDef& other) = default;
+  Grid3DSpatialDef(const Grid3DSpatialDef& other) = default;
   Grid3DSpatialDef(Grid3DSpatialDef&& other) noexcept : Grid3DSpatialDef() {
     swap(*this, other);
   }
@@ -115,6 +115,9 @@ class Grid3DTraversalCounter : public Grid3DSpatialDef<float_type> {
   Grid3DTraversalCounter() = default;
   virtual ~Grid3DTraversalCounter() override = default;
 
+  Grid3DTraversalCounter(const Grid3DTraversalCounter& other) = default;
+
+  //! Copy-and-swap. Handles both lvalues and rvalues
   Grid3DTraversalCounter& operator=(Grid3DTraversalCounter other) {
     swap(*this, other);
     return *this;
