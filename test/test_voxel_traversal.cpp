@@ -23,9 +23,9 @@ class TestVoxelTraversal : public ::testing::Test {
         expected.cbegin(), expected.cend(), actual.cbegin(),
         [](const auto& a, const auto& b) { return (a == b).all(); }));
     // check if all expected voxels are actually considered to be within grid
-    EXPECT_TRUE(
-        std::all_of(expected.cbegin(), expected.cend(),
-                    [this](const auto& index) { return grid_.isWithinGrid(index); }));
+    EXPECT_TRUE(std::all_of(
+        expected.cbegin(), expected.cend(),
+        [this](const auto& index) { return grid_.isWithinGrid(index); }));
   }
   void expectTraversedInOrderWithGaps(
       const TraversedVoxels<float_type>& expected,

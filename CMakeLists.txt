@@ -8,7 +8,7 @@ if (POLICY CMP0003)
   cmake_policy(SET CMP0003 NEW)
 endif()
 
-project(VoxelTraversal VERSION 0.1 LANGUAGES CXX)
+project(VoxelTraversal VERSION 1.0 LANGUAGES CXX)
 
 # guard against in-source builds
 if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
@@ -79,12 +79,12 @@ set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
 # ------------- VOXEL TRAVERSAL LIBRARY -----------------
-add_library(voxel_traversal SHARED voxel_traversal.cpp)
+add_library(voxel_traversal SHARED src/voxel_traversal.cpp)
 
 set_target_properties(voxel_traversal PROPERTIES EXPORT_NAME VoxelTraversal)
 set_target_properties(voxel_traversal PROPERTIES VERSION ${PROJECT_VERSION})
 set_target_properties(voxel_traversal PROPERTIES SOVERSION ${PROJECT_VERSION})
-set_target_properties(voxel_traversal PROPERTIES PUBLIC_HEADER "grid.h;ray.h;voxel_traversal.h")
+set_target_properties(voxel_traversal PROPERTIES PUBLIC_HEADER "src/grid.h;src/ray.h;src/voxel_traversal.h")
 
 target_include_directories(voxel_traversal PUBLIC
   $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
@@ -121,14 +121,14 @@ enable_testing()
 add_executable(
   test_voxel_traversal
   test/test_voxel_traversal.cpp
-  voxel_traversal.cpp
 )
 target_include_directories(test_voxel_traversal PUBLIC
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
   $<INSTALL_INTERFACE:include/VoxelTraversal>
   )
 target_link_libraries(
   test_voxel_traversal
+  voxel_traversal
   Eigen3::Eigen
   gtest_main
 )
@@ -136,14 +136,14 @@ target_link_libraries(
 add_executable(
   test_voxel_counter
   test/test_voxel_counter.cpp
-  voxel_traversal.cpp
 )
 target_include_directories(test_voxel_counter PUBLIC
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>/src
   $<INSTALL_INTERFACE:include/VoxelTraversal>
   )
 target_link_libraries(
   test_voxel_counter
+  voxel_traversal
   Eigen3::Eigen
   gtest_main
 )
@@ -151,14 +151,14 @@ target_link_libraries(
 add_executable(
   test_voxel_intersect
   test/test_voxel_intersect.cpp
-  voxel_traversal.cpp
 )
 target_include_directories(test_voxel_intersect PUBLIC
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>/src
   $<INSTALL_INTERFACE:include/VoxelTraversal>
   )
 target_link_libraries(
   test_voxel_intersect
+  voxel_traversal
   Eigen3::Eigen
   gtest_main
 )
@@ -166,14 +166,14 @@ target_link_libraries(
 add_executable(
   test_on_data
   test/test_on_data.cpp
-  voxel_traversal.cpp
 )
 target_include_directories(test_on_data PUBLIC
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>/src
   $<INSTALL_INTERFACE:include/VoxelTraversal>
   )
 target_link_libraries(
   test_on_data
+  voxel_traversal
   Eigen3::Eigen
   gtest_main
 )
