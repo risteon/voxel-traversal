@@ -90,25 +90,25 @@ bool traverseSingle(
 }  // namespace detail
 
 // Uses the improved version of Smit's algorithm to determine if the given ray
-// will intersect the grid between tMin and tMax. This version causes an
+// will intersect the grid between tMin and t_max. This version causes an
 // additional efficiency penalty, but takes into account the negative zero case.
-// tMin and tMax are then updated to incorporate the new intersection values.
+// tMin and t_max are then updated to incorporate the new intersection values.
 // Returns true if the ray intersects the grid, and false otherwise.
 // See: http://www.cs.utah.edu/~awilliam/box/box.pdf
 template <typename float_type>
 [[nodiscard]] bool rayBoxIntersection(const Ray<float_type>& ray,
                                       const Grid3DSpatialDef<float_type>& grid,
-                                      float_type& tMin, float_type& tMax,
+                                      float_type& tMin, float_type& t_max,
                                       float_type t0, float_type t1) noexcept {
   float_type tYMin, tYMax, tZMin, tZMax;
   const auto inverse_direction = ray.direction().cwiseInverse();
 
   if (inverse_direction.x() >= 0) {
     tMin = (grid.minBound().x() - ray.origin().x()) * inverse_direction.x();
-    tMax = (grid.maxBound().x() - ray.origin().x()) * inverse_direction.x();
+    t_max = (grid.maxBound().x() - ray.origin().x()) * inverse_direction.x();
   } else {
     tMin = (grid.maxBound().x() - ray.origin().x()) * inverse_direction.x();
-    tMax = (grid.minBound().x() - ray.origin().x()) * inverse_direction.x();
+    t_max = (grid.minBound().x() - ray.origin().x()) * inverse_direction.x();
   }
 
   if (inverse_direction.y() >= 0) {
@@ -119,9 +119,9 @@ template <typename float_type>
     tYMax = (grid.minBound().y() - ray.origin().y()) * inverse_direction.y();
   }
 
-  if (tMin > tYMax || tYMin > tMax) return false;
+  if (tMin > tYMax || tYMin > t_max) return false;
   if (tYMin > tMin) tMin = tYMin;
-  if (tYMax < tMax) tMax = tYMax;
+  if (tYMax < t_max) t_max = tYMax;
 
   if (inverse_direction.z() >= 0) {
     tZMin = (grid.minBound().z() - ray.origin().z()) * inverse_direction.z();
@@ -131,10 +131,10 @@ template <typename float_type>
     tZMax = (grid.minBound().z() - ray.origin().z()) * inverse_direction.z();
   }
 
-  if (tMin > tZMax || tZMin > tMax) return false;
+  if (tMin > tZMax || tZMin > t_max) return false;
   if (tZMin > tMin) tMin = tZMin;
-  if (tZMax < tMax) tMax = tZMax;
-  return (tMin < t1 && tMax > t0);
+  if (tZMax < t_max) t_max = tZMax;
+  return (tMin < t1 && t_max > t0);
 }
 
 template <typename float_type>

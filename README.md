@@ -28,7 +28,7 @@ $ cmake --build . --target install -- -j 4
 $ ctest
 ```
 
-## Include & Usage Example
+## Find with cmake & Usage 
 
 Your project's CMakeLists.txt:
 ```cmake
@@ -43,10 +43,31 @@ add_executable(your_executable main.cpp)
 target_link_libraries(your_executable VoxelTraversal::VoxelTraversal)
 ```
 When configuring, set `CMAKE_PREFIX_PATH` to this project's install directory.
-You will need this include:
+
+Code example:
 ```c++
 #include <VoxelTraversal/voxel_traversal.h>
-```
 
-## ToDo's
-* More tests
+using namespace voxel_traversal;
+
+// types for vectors and indices
+using V3 = typename Grid3DSpatialDef<double>::Vector3d;
+using C3 = typename Grid3DSpatialDef<double>::Index3d;
+using R = Ray<double>;
+
+const V3 bound_min(0.0, 0.0, 0.0);
+const V3 bound_max(2.0, 2.0, 2.0);
+const C3 voxel_count(2, 2, 2);
+Grid3DSpatialDef<double> grid(bound_min, bound_max, voxel_count);
+// use this subclass to count traversed voxels
+Grid3DTraversalCounter<double> grid_counter(bound_min, bound_max, voxel_count);
+
+// Ray
+const auto ray = R::fromOriginDir({.5, .5, .5}, {1., 0., 0.});
+
+// determine which voxels are traversed (in order from origin to end)
+TraversedVoxels<TypeParam> traversed{};
+const auto does_intersect = traverseVoxelGrid(ray, grid, traversed);
+// count traversed voxels
+traverseVoxelGrid(ray, grid_counter);
+```
