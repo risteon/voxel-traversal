@@ -1,5 +1,7 @@
 # Voxel Traversal
 
+[![Build Status](https://app.travis-ci.com/risteon/voxel-traversal.svg?branch=main)](https://app.travis-ci.com/risteon/voxel-traversal)
+
 A small library to compute voxel traversal on the CPU.
 The implemented algorithm is J. Amanatides, A. Woo: 
 ["A Fast Voxel Traversal Algorithm"](http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.42.3443&rep=rep1&type=pdf).
