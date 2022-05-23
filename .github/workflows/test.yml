@@ -1,0 +1,37 @@
+name: Run tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Install cmake
+      run: mkdir -p deps/cmake && wget --no-check-certificate --quiet -O - "https://github.com/Kitware/CMake/releases/download/v3.21.3/cmake-3.21.3-linux-x86_64.tar.gz" | tar --strip-components=1 -xz -C deps/cmake && export PATH=deps/cmake/bin:${PATH}
+
+    - name: Install Eigen
+      run: sudo apt-get install -y libeigen3-dev
+
+    - name: Checkout commit
+      uses: actions/checkout@v3
+      with:
+        lfs: true
+
+    - name: Checkout LFS objects
+      run: git lfs checkout
+
+    - name: Configure
+      run: |
+        cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=./install
+
+    - name: Build
+      run: |
+        cd build && cmake --build . --target install
+
+    - name: Test
+      run: |
+        cd build && ctest -C Debug --output-on-failure --verbose

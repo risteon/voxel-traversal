@@ -1,6 +1,7 @@
 # Voxel Traversal
 
-[![Build Status](https://app.travis-ci.com/risteon/voxel-traversal.svg?branch=main)](https://app.travis-ci.com/risteon/voxel-traversal)
+[![Build Status](https://github.com/risteon/voxel-traversal/actions/workflows/test.yml/badge.svg)](https://github.com/risteon/voxel-traversal/actions/workflows/test.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 A small library to compute voxel traversal on the CPU.
 The implemented algorithm is J. Amanatides, A. Woo: 
