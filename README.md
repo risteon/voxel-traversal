@@ -3,6 +3,8 @@
 [![Build Status](https://github.com/risteon/voxel-traversal/actions/workflows/test.yml/badge.svg)](https://github.com/risteon/voxel-traversal/actions/workflows/test.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
+![voxel traversal cover image](voxel_traversal.png?raw=true)
+
 A small library to compute voxel traversal on the CPU.
 The implemented algorithm is J. Amanatides, A. Woo: 
 ["A Fast Voxel Traversal Algorithm"](http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.42.3443&rep=rep1&type=pdf).
