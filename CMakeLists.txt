@@ -78,6 +78,14 @@ FetchContent_Declare(
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
+# ------------------- FETCH PYBIND11 ------------------
+FetchContent_Declare(
+  pybind11
+  GIT_REPOSITORY https://github.com/pybind/pybind11
+  GIT_TAG        v2.9.2
+)
+FetchContent_MakeAvailable(pybind11)
+
 # ------------- VOXEL TRAVERSAL LIBRARY -----------------
 add_library(voxel_traversal SHARED src/voxel_traversal.cpp)
 
@@ -115,12 +123,18 @@ install(TARGETS voxel_traversal EXPORT voxelTraversalTargets
 # Other CMake targets can refer to it using VoxelTraversal::<lib>.
 export(TARGETS voxel_traversal NAMESPACE VoxelTraversal:: FILE VoxelTraversalTargets.cmake)
 
+# ---------------- python bindings --------------------
+# TODO(risteon): make all python bindings optional
+pybind11_add_module(pytraversal SHARED src/python_bindings.cpp)
+target_link_libraries(pytraversal PRIVATE voxel_traversal Eigen3::Eigen)
+
+
 # ------------------- TESTS -------------------
 enable_testing()
 ##################################
 add_executable(
   test_voxel_traversal
-  test/test_voxel_traversal.cpp
+  tests/test_voxel_traversal.cpp
 )
 target_include_directories(test_voxel_traversal PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
@@ -135,7 +149,7 @@ target_link_libraries(
 ##################################
 add_executable(
   test_voxel_counter
-  test/test_voxel_counter.cpp
+  tests/test_voxel_counter.cpp
 )
 target_include_directories(test_voxel_counter PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>/src
@@ -150,7 +164,7 @@ target_link_libraries(
 ##################################
 add_executable(
   test_voxel_intersect
-  test/test_voxel_intersect.cpp
+  tests/test_voxel_intersect.cpp
 )
 target_include_directories(test_voxel_intersect PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>/src
@@ -165,7 +179,7 @@ target_link_libraries(
 ##################################
 add_executable(
   test_on_data
-  test/test_on_data.cpp
+  tests/test_on_data.cpp
 )
 target_include_directories(test_on_data PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>/src

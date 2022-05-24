@@ -13,6 +13,7 @@ It is based on the code prototype of Chris Gyurgyik
 
 The contributions of this repository are:
 * **Tests!**
+* Python bindings (in progress...)
 * Installation and cmake packaging
 * Use Eigen for readability, vectorization, and grid counting.
 * Execution and timing on real LiDAR data from the [nuScenes dataset](https://www.nuscenes.org/). The demonstration data files are bundled with git lfs.
@@ -21,11 +22,22 @@ The contributions of this repository are:
 * Eigen3
 * C++17 compiler
 
+## Python bindings
+
+```bash
+# setup python environment, make cmake >= 3.21 available, e.g. with conda install cmake=3.22
+$ python setup.py install
+# or
+$ python setup.py develop
+$ pytest tests
+```
+
 ## Run the Tests and Install
 ```bash
 $ git clone https://github.com/risteon/voxel-traversal.git
 $ mkdir build && cd build
 # set CMAKE_INSTALL_PREFIX to your liking
+# specify python version with -DPYTHON_EXECUTABLE=<path/to/python> or -DPYBIND11_PYTHON_VERSION=3.XX
 $ cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../install ..
 # build and install
 $ cmake --build . --target install -- -j 4
