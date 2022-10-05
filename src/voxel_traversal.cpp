@@ -15,16 +15,16 @@ bool setupTraversal(const Ray<typename Grid::float_t>& ray, const Grid& grid,
   using float_type = typename Grid::float_t;
   using int_type = typename Grid::int_type;
 
-  float_type tMin{};
-  float_type tMax{};
+  float_type tmin_temp{};
+  float_type tmax_temp{};
   const bool ray_intersects_grid =
-      rayBoxIntersection(ray, grid, tMin, tMax, t0, t1);
+      rayBoxIntersection(ray, grid, tmin_temp, tmax_temp, t0, t1);
   if (!ray_intersects_grid) return false;
 
-  tMin = std::max(tMin, t0);
-  tMax = std::min(tMax, t1);
-  const auto ray_start = ray.at(tMin);
-  const auto ray_end = ray.at(tMax);
+  tmin_temp = std::max(tmin_temp, t0);
+  tmax_temp = std::min(tmax_temp, t1);
+  const auto ray_start = ray.at(tmin_temp);
+  const auto ray_end = ray.at(tmax_temp);
 
   // get voxel index of start and end within grid
   const auto voxelIndexStartUnlimited = grid.getIndex(ray_start);
@@ -35,22 +35,22 @@ bool setupTraversal(const Ray<typename Grid::float_t>& ray, const Grid& grid,
   final_index =
       voxelIndexEndUnlimited.cwiseMax(0).cwiseMin(grid.numVoxels() - 1);
 
-  //  const auto t_max_xyz = grid.minBound() +
+  //  const auto tmax_xyz = grid.minBound() +
   const auto index_delta =
       (ray.direction().array() > 0.0).template cast<int_type>();
   const auto start_index = current_index + index_delta;
-  const auto t_max_xyz =
+  const auto tmax_xyz =
       ((grid.minBound().array() +
         ((start_index.template cast<float_type>() * grid.voxelSize()) -
          ray_start.array())) /
        ray.direction().array()) +
-      tMin;
+      tmin_temp;
 
-  tmax = (ray.direction().array() == 0.0).select(tMax, t_max_xyz);
+  tmax = (ray.direction().array() == 0.0).select(tmax_temp, tmax_xyz);
   const auto step_float = ray.direction().template array().sign().eval();
   step_index = step_float.template cast<int_type>().eval();
   delta = (step_index == 0)
-              .select(tMax,
+              .select(tmax_temp,
                       grid.voxelSize() / ray.direction().array() * step_float);
 
   return true;
@@ -90,51 +90,52 @@ bool traverseSingle(
 }  // namespace detail
 
 // Uses the improved version of Smit's algorithm to determine if the given ray
-// will intersect the grid between tMin and t_max. This version causes an
+// will intersect the grid between tmin and tmax. This version causes an
 // additional efficiency penalty, but takes into account the negative zero case.
-// tMin and t_max are then updated to incorporate the new intersection values.
+// tMin and tmax are then updated to incorporate the new intersection values.
 // Returns true if the ray intersects the grid, and false otherwise.
 // See: http://www.cs.utah.edu/~awilliam/box/box.pdf
 template <typename float_type>
 [[nodiscard]] bool rayBoxIntersection(const Ray<float_type>& ray,
                                       const Grid3DSpatialDef<float_type>& grid,
-                                      float_type& tMin, float_type& t_max,
+                                      float_type& tmin, float_type& tmax,
                                       float_type t0, float_type t1) noexcept {
-  float_type tYMin, tYMax, tZMin, tZMax;
+  float_type tmin_temp{};
+  float_type tmax_temp{};
   const auto inverse_direction = ray.direction().cwiseInverse();
 
   if (inverse_direction.x() >= 0) {
-    tMin = (grid.minBound().x() - ray.origin().x()) * inverse_direction.x();
-    t_max = (grid.maxBound().x() - ray.origin().x()) * inverse_direction.x();
+    tmin = (grid.minBound().x() - ray.origin().x()) * inverse_direction.x();
+    tmax = (grid.maxBound().x() - ray.origin().x()) * inverse_direction.x();
   } else {
-    tMin = (grid.maxBound().x() - ray.origin().x()) * inverse_direction.x();
-    t_max = (grid.minBound().x() - ray.origin().x()) * inverse_direction.x();
+    tmin = (grid.maxBound().x() - ray.origin().x()) * inverse_direction.x();
+    tmax = (grid.minBound().x() - ray.origin().x()) * inverse_direction.x();
   }
 
   if (inverse_direction.y() >= 0) {
-    tYMin = (grid.minBound().y() - ray.origin().y()) * inverse_direction.y();
-    tYMax = (grid.maxBound().y() - ray.origin().y()) * inverse_direction.y();
+    tmin_temp = (grid.minBound().y() - ray.origin().y()) * inverse_direction.y();
+    tmax_temp = (grid.maxBound().y() - ray.origin().y()) * inverse_direction.y();
   } else {
-    tYMin = (grid.maxBound().y() - ray.origin().y()) * inverse_direction.y();
-    tYMax = (grid.minBound().y() - ray.origin().y()) * inverse_direction.y();
+    tmin_temp = (grid.maxBound().y() - ray.origin().y()) * inverse_direction.y();
+    tmax_temp = (grid.minBound().y() - ray.origin().y()) * inverse_direction.y();
   }
 
-  if (tMin > tYMax || tYMin > t_max) return false;
-  if (tYMin > tMin) tMin = tYMin;
-  if (tYMax < t_max) t_max = tYMax;
+  if (tmin > tmax_temp || tmin_temp > tmax) return false;
+  if (tmin_temp > tmin) tmin = tmin_temp;
+  if (tmax_temp < tmax) tmax = tmax_temp;
 
   if (inverse_direction.z() >= 0) {
-    tZMin = (grid.minBound().z() - ray.origin().z()) * inverse_direction.z();
-    tZMax = (grid.maxBound().z() - ray.origin().z()) * inverse_direction.z();
+    tmin_temp = (grid.minBound().z() - ray.origin().z()) * inverse_direction.z();
+    tmax_temp = (grid.maxBound().z() - ray.origin().z()) * inverse_direction.z();
   } else {
-    tZMin = (grid.maxBound().z() - ray.origin().z()) * inverse_direction.z();
-    tZMax = (grid.minBound().z() - ray.origin().z()) * inverse_direction.z();
+    tmin_temp = (grid.maxBound().z() - ray.origin().z()) * inverse_direction.z();
+    tmax_temp = (grid.minBound().z() - ray.origin().z()) * inverse_direction.z();
   }
 
-  if (tMin > tZMax || tZMin > t_max) return false;
-  if (tZMin > tMin) tMin = tZMin;
-  if (tZMax < t_max) t_max = tZMax;
-  return (tMin < t1 && t_max > t0);
+  if (tmin > tmax_temp || tmin_temp > tmax) return false;
+  if (tmin_temp > tmin) tmin = tmin_temp;
+  if (tmax_temp < tmax) tmax = tmax_temp;
+  return (tmin < t1 && tmax > t0);
 }
 
 template <typename float_type>

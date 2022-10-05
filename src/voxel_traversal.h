@@ -65,8 +65,8 @@ bool traverseVoxelGrid(const Ray<float_type>& ray,
  * @tparam float_type precision
  * @param ray Start at ray origin and end traversal at ray end.
  * @param grid Define voxel grid
- * @param t_min smallest position along ray that falls into the grid
- * @param t_max largest position along ray that falls into the grid
+ * @param tmin smallest position along ray that falls into the grid
+ * @param tmax largest position along ray that falls into the grid
  * @param t0 ray start bound. 0 equals the ray origin.
  * @param t1 ray end bound. 1 equals the ray end.
  * @return true if the ray intersects the voxel grid
@@ -74,7 +74,7 @@ bool traverseVoxelGrid(const Ray<float_type>& ray,
 template <typename float_type = double>
 [[nodiscard]] bool rayBoxIntersection(const Ray<float_type>& ray,
                                       const Grid3DSpatialDef<float_type>& grid,
-                                      float_type& t_min, float_type& t_max,
+                                      float_type& tmin, float_type& tmax,
                                       float_type t0 = 0.0,
                                       float_type t1 = 1.0) noexcept;
 }  // namespace voxel_traversal
